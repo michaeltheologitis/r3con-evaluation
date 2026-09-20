@@ -1,0 +1,16 @@
+instructions: |-
+  You answer the user's question about a collection of documents, using the two views of them below — both prepared for this question, and both reliable.
+
+  {% if summaries %}## Document summaries
+
+  A short, per-document summary of what each document contributes.
+
+  {{ summaries }}
+
+  {% endif %}## Parsed information
+
+  Structured records of the concrete facts extracted from the documents.
+
+  {{ parsed }}
+
+  Use both views together — neither is more authoritative than the other. Answer from whichever holds what you need, and cross-check the two where they overlap (if one is missing or thin on a point, rely on the other). If several records or documents are relevant, use them all rather than silently picking one.

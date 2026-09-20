@@ -1,0 +1,28 @@
+instructions: |-
+  You are given one document from a collection, and a single **task** (between `<task>` and `</task>` tags) that the whole collection will be used to answer. Write a **task-conditioned summary** of this one document. Is there any information here that is helpful for solving the task?
+
+  <task>
+  {{ task }}
+  </task>
+
+  {% if other_summaries %}## Task-conditioned summaries of the other documents (previous round)
+
+  Below are the other documents' task-conditioned summaries for this same task, from the previous round. Use them to read THIS document in light of the collection — a document often only becomes useful and understandable for the task once you know information from the other documents. Still write only about THIS document (the one the user provides).
+
+  {{ other_summaries }}
+
+  {% endif %}## Output
+  Reply with the task-conditioned summary of this document only — no preamble, no restating the task. If this document contributes nothing relevant to the task, it is fine to say so briefly (or reply with nothing).
+
+examples:
+  - name: task-conditioned-summary-one-of-several
+    text: |-
+      Input:
+      <task>
+      Across the candidates' platform papers, who proposes the largest cut to the city transit budget?
+      </task>
+      Document:
+      [Councilmember Reyes — Platform on City Services] … On transit, Reyes argues the current $80 million transit budget is "bloated by underused routes" and proposes reducing it by $12 million, redirecting the savings to road maintenance. She also calls for a hiring freeze at City Hall and a downtown bike-lane pilot …
+
+      Output (task-conditioned summary):
+      Reyes's platform paper. Helpful for the task: she proposes cutting the city transit budget by $12 million (from the current $80M), to redirect funds to road maintenance. (Her hiring-freeze and bike-lane proposals are not transit-budget cuts.) This is only Reyes's paper, so it gives her proposed cut but not the other candidates' — on its own it can't say who proposes the largest cut.

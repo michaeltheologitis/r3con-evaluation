@@ -1,0 +1,13 @@
+# Sampling preset: served Qwen in instruct / no-thinking mode.
+# Referenced by name from a config's `sampling:` field, or picked at run time with
+# `--sampling qwen-no-thinking` (no bundled config needed).
+# Top-level keys are OpenAI/LiteLLM params; vLLM-specific knobs go under extra_body.
+temperature: 0.7
+top_p: 0.8
+presence_penalty: 1.5
+extra_body:
+  top_k: 20
+  min_p: 0.0
+  repetition_penalty: 1.0
+  chat_template_kwargs:
+    enable_thinking: false

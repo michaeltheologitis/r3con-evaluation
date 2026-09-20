@@ -108,10 +108,20 @@ hipporag = [
     "filelock>=3.12",
     "packaging>=23",
 ]
+# R3Con — the method under evaluation (evals/r3con/). Its pipeline renders prompts with
+# jinja2, reads YAML prompts/configs, and counts tokens with tiktoken for the parse-size
+# guard. All three also arrive transitively via litellm/datasets; declared explicitly so
+# the method's own requirements cannot silently vanish when a transitive dep moves.
+r3con = [
+    "jinja2>=3.1",
+    "pyyaml>=6.0",
+    "tiktoken>=0.5",
+]
 [tool.setuptools.packages.find]
 include = ["evals*"]
 
 [tool.setuptools.package-data]
+"evals.r3con.pipeline" = ["prompts/*/*.yaml", "prompts/*/*/*.yaml", "configs/*.yaml", "configs/*/*.yaml"]
 "evals.benchmarks.loong" = ["data/loong.jsonl"]
 "evals.benchmarks.dracula" = ["docs/*.txt", "questions.json", "manifest.json", "editorial_note.txt"]
 # A-RAG's vendored ReAct system prompt (loaded by the connector at runtime).

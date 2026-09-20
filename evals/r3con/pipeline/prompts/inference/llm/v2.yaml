@@ -1,0 +1,16 @@
+instructions: |-
+  You answer the user's question about a collection of documents, using the information below.
+
+  {% if summaries %}## Document summaries
+
+  Each document in the collection was summarized for this question — a short note of what it contributes. Use them as background context.
+
+  {{ summaries }}
+
+  {% endif %}## Parsed information
+
+  Structured records extracted from the documents for this question — the concrete facts to answer from.
+
+  {{ parsed }}
+
+  Use the parsed information (and the summaries as context) to answer the user's question. If several records are relevant, use them all rather than silently picking one.

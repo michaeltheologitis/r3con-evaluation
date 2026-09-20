@@ -2812,6 +2812,11 @@ hipporag = [
 memagent = [
     { name = "transformers" },
 ]
+r3con = [
+    { name = "jinja2" },
+    { name = "pyyaml" },
+    { name = "tiktoken" },
+]
 raptor = [
     { name = "faiss-cpu" },
     { name = "numpy" },
@@ -2839,6 +2844,7 @@ requires-dist = [
     { name = "filelock", marker = "extra == 'hipporag'", specifier = ">=3.12" },
     { name = "ipykernel", marker = "extra == 'full'", specifier = ">=7.2.0" },
     { name = "ipywidgets", marker = "extra == 'full'", specifier = ">=8.1.8" },
+    { name = "jinja2", marker = "extra == 'r3con'", specifier = ">=3.1" },
     { name = "litellm", specifier = ">=1.50.0" },
     { name = "matplotlib", marker = "extra == 'full'", specifier = ">=3.10.8" },
     { name = "numpy", marker = "extra == 'arag'", specifier = ">=1.24" },
@@ -2851,6 +2857,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8.0" },
     { name = "python-dotenv", specifier = ">=1.0" },
     { name = "python-igraph", marker = "extra == 'hipporag'", specifier = ">=0.11" },
+    { name = "pyyaml", marker = "extra == 'r3con'", specifier = ">=6.0" },
     { name = "r3con-evaluation", extras = ["test"], marker = "extra == 'full'" },
     { name = "rich", specifier = ">=15.0.0" },
     { name = "rlms", marker = "extra == 'rlms'", specifier = ">=0.1.2" },
@@ -2863,6 +2870,7 @@ requires-dist = [
     { name = "tenacity", specifier = ">=9.1.4" },
     { name = "tiktoken", marker = "extra == 'arag'", specifier = ">=0.5" },
     { name = "tiktoken", marker = "extra == 'hipporag'", specifier = ">=0.5" },
+    { name = "tiktoken", marker = "extra == 'r3con'", specifier = ">=0.5" },
     { name = "tiktoken", marker = "extra == 'raptor'", specifier = ">=0.5" },
     { name = "torch", marker = "extra == 'hipporag'", specifier = ">=2.2" },
     { name = "tqdm", marker = "extra == 'raptor'", specifier = ">=4.66" },
@@ -2871,7 +2879,7 @@ requires-dist = [
     { name = "transformers", marker = "extra == 'structrag'", specifier = ">=4.40" },
     { name = "umap-learn", marker = "extra == 'raptor'", specifier = ">=0.5" },
 ]
-provides-extras = ["test", "full", "structrag", "arag", "rlms", "codeact", "raptor", "memagent", "hipporag"]
+provides-extras = ["test", "full", "structrag", "arag", "rlms", "codeact", "raptor", "memagent", "hipporag", "r3con"]
 
 [[package]]
 name = "referencing"

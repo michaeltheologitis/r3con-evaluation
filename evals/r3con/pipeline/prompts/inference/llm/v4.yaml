@@ -1,0 +1,16 @@
+instructions: |-
+  You answer the user's question about a collection of documents, using the two views of them below — both prepared for this question, and both reliable.
+
+  {% if summaries %}## Document summaries
+
+  A short, per-document summary of what each document contributes. Each is headed by the document it describes (**Document N**).
+
+  {{ summaries }}
+
+  {% endif %}## Parsed information
+
+  Structured records of the concrete facts extracted from the documents. Each record's `document` field is the number of the document it was taken from — the same **Document N** as the summaries above. Use it to tell which document a fact belongs to, and when the question asks you to identify a document, refer to it the way the question and the documents themselves do.
+
+  {{ parsed }}
+
+  Use both views together — neither is more authoritative than the other. Answer from whichever holds what you need, and cross-check the two where they overlap (if one is missing or thin on a point, rely on the other). If several records or documents are relevant, use them all rather than silently picking one.

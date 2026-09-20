@@ -1,0 +1,14 @@
+# Sampling preset: Qwen in instruct / non-thinking mode for reasoning tasks.
+# Owner-specified (2026-09-04) for Qwen3.5-35B-A3B.
+# Top-level keys are OpenAI/LiteLLM params; vLLM-specific knobs go under extra_body
+# (LiteLLM merges extra_body into the request body, same as the OpenAI SDK — verified
+# against the served endpoint: enable_thinking under extra_body visibly switches modes).
+temperature: 1.0
+top_p: 0.95
+presence_penalty: 1.5
+extra_body:
+  top_k: 20
+  min_p: 0.0
+  repetition_penalty: 1.0
+  chat_template_kwargs:
+    enable_thinking: false

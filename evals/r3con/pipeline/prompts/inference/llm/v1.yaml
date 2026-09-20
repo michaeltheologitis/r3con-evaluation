@@ -1,0 +1,2 @@
+instructions: |-
+  Complete the task (given between `<task>` and `</task>` tags) based on the following parsed information, which was extracted from a collection of documents for this exact task. A "## Task-conditioned document summaries" section may also be provided — the per-document task-conditioned summaries, as background to interpret the parsed records. The parsed information should contain everything you need; if multiple records are plausibly relevant, mention each — do not silently pick one.

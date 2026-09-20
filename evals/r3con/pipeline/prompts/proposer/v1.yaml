@@ -1,0 +1,144 @@
+instructions: |-
+  You design a Pydantic schema that captures exactly the information needed to complete a single **task** over a collection of documents you have not seen. The task — given to you between `<task>` and `</task>` tags — could be a question, a comparison, a verification, a count, a request to list or summarize, anything. The documents could be anything — news articles, an email thread, court documents, narratives, transcripts, reports, financial filings, research papers.
+
+  The schema is handed downstream to a parser LLM that fills instances of your classes from the documents; a final inference agent then computes the answer from those instances. You don't need to think about those downstream stages — just design the schema that captures the right facts.
+
+  Use `Literal[...]` only for values derivable from the task itself — entities named in the task are safe. Anything you would need to read the documents to enumerate (locations, dates, names, predicates) must stay as `str`. Model only what is required to compute the answer.
+
+  Your output must define a top-level `Parse(BaseModel)` class that aggregates every other class you define as one of its fields (typically `list[...]` of each).
+
+  {% if summaries %}## Task-conditioned document summaries
+
+  Task-conditioned summaries of the documents that will be parsed (one per document), produced upstream for this exact task. Use them to ground your schema in what the documents actually contain, rather than the task's surface words alone. (Do not bake any answer into the schema; just let the summaries inform which facts are worth a field.)
+
+  {{ summaries }}
+
+  {% endif %}## Output format
+
+  Reply with two parts:
+
+  1. A brief `Thought:` snippet (1–2 sentences) saying why this schema design fits the task.
+  2. A `<schema>...</schema>` block containing only Python source. The runtime extracts the body between the tags and `exec`s it.
+
+  ## Rules
+
+  **The parser sees ONE document at a time.** It cannot aggregate or compare across the whole collection, so no derived/computed/aggregate fields (e.g. `difference_years`, `total_count`, `most_recent`) — those force the parser to invent values it can't see. Put extractable facts as rows in `list[...]` fields; the inference agent aggregates downstream.
+
+  **Model the underlying domain, not the task's surface form.** The task may rest on a premise that doesn't hold in the text. If the task is *"How does X react when Y does Z?"* and the schema only records "X's reaction to Y doing Z", you miss the case where the text says *Y didn't do Z, X did it themselves*. Model the underlying event class (e.g. *"any event where the object is destroyed, by whom"*) so both framings surface.
+
+  **Class and field names must be valid Python identifiers** — no apostrophes, no spaces, no punctuation (`hasn't_heard` → `has_not_heard`). The schema is `exec`'d as Python.
+
+examples:
+  - name: testimony (statement about a topic)
+    text: |-
+      Input:
+      <task>
+      What did Lee tell Riya about the test results?
+      </task>
+
+      Thought: The task pins a specific speaker→listener pair on a specific topic. One record per statement with the claimed content + a verifying quote is enough; the inference agent picks the relevant row.
+
+      <schema>
+      from pydantic import BaseModel, Field
+
+      class LeeToRiyaStatement(BaseModel):
+          """A statement Lee made to Riya about the test results."""
+          claimed_results: str | None = Field(description="The test results Lee claims, copied as written")
+          quote: str = Field(description="A short verbatim excerpt anchoring the statement")
+
+      class Parse(BaseModel):
+          lee_to_riya_statements: list[LeeToRiyaStatement]
+      </schema>
+
+  - name: comparative numeric (no derived fields)
+    text: |-
+      Input:
+      <task>
+      How many years younger is Lily than Nikki?
+      </task>
+
+      Thought: Comparisons happen downstream of parsing — the parser sees one document at a time and cannot subtract ages across persons. Capture each stated age as its own record; inference computes the difference.
+
+      <schema>
+      from pydantic import BaseModel, Field
+
+      class AgeMention(BaseModel):
+          """A stated age for a named person at some point in the text."""
+          person: str | None = Field(description="The person whose age is stated, exactly as named (e.g. 'Lily', 'Nikki')")
+          age_years: int | None = Field(description="The age in years, as stated (integer)")
+          quote: str = Field(description="A short verbatim excerpt from the text stating the age")
+
+      class Parse(BaseModel):
+          age_mentions: list[AgeMention]
+      </schema>
+
+  - name: event-anchored reaction (wider than the task's surface)
+    text: |-
+      Input:
+      <task>
+      How does X react when Y destroys the contents of the red envelope?
+      </task>
+
+      Thought: The task assumes Y is the destroyer, but the text may say someone else did it — or X did it themselves. Model the destruction *event* (by anyone) and X's actions separately so both framings surface in the parse.
+
+      <schema>
+      from pydantic import BaseModel, Field
+
+      class EnvelopeContentsEvent(BaseModel):
+          """An event where the red envelope or its contents are handled, revealed, altered, or destroyed."""
+          actor: str | None = Field(description="Who performs the action, as named in the text")
+          action: str | None = Field(description="What is done to the envelope or its contents — short verbatim/paraphrase")
+          quote: str = Field(description="A short verbatim excerpt anchoring the event")
+
+      class XAction(BaseModel):
+          """Any action, statement, or reaction by X involving the red envelope or its contents."""
+          action: str | None = Field(description="What X does, says, or feels — short verbatim/paraphrase")
+          quote: str = Field(description="A short verbatim excerpt anchoring X's action")
+
+      class Parse(BaseModel):
+          envelope_contents_events: list[EnvelopeContentsEvent]
+          x_actions: list[XAction]
+      </schema>
+
+  - name: statement verification (parse vs. truth)
+    text: |-
+      Input:
+      <task>
+      Is the following statement correct? Ophelia kills Stanton because Hoagy fell into Bandit's trap.
+      </task>
+
+      Thought: The task asks whether a specific kill-event and motive hold in the text. Model every kill with a `stated_reason` field so inference can check both (a) does Ophelia→Stanton appear, and (b) what reason the text actually gives for it.
+
+      <schema>
+      from pydantic import BaseModel, Field
+
+      class KillEvent(BaseModel):
+          """An event where one named person kills another, or it is reported/claimed they did."""
+          killer: str | None = Field(description="The killer's name as written in the text")
+          victim: str | None = Field(description="The victim's name as written in the text")
+          stated_reason: str | None = Field(description="The reason the text gives for the killing — verbatim phrase or short paraphrase. None if the text states no reason.")
+          quote: str = Field(description="A short verbatim excerpt anchoring the kill")
+
+      class Parse(BaseModel):
+          kill_events: list[KillEvent]
+      </schema>
+
+  - name: literal-token occurrence count (no derived totals)
+    text: |-
+      Input:
+      <task>
+      How many times does the phrase "SHOWMAN'S BRAVADO" appear in the text?
+      </task>
+
+      Thought: "How many times" is a count — but the parser only sees one document at a time and can't aggregate across the whole collection. Don't add a `total_count` field; record each occurrence as a row and let inference count the list.
+
+      <schema>
+      from pydantic import BaseModel, Field
+
+      class ShowmansBravadoOccurrence(BaseModel):
+          """An appearance of the literal phrase "SHOWMAN'S BRAVADO" in the text (any casing)."""
+          quote: str = Field(description="The short surrounding context that contains the phrase, verbatim — so the inference agent can verify it's a real occurrence and not a near-miss.")
+
+      class Parse(BaseModel):
+          showmans_bravado_occurrences: list[ShowmansBravadoOccurrence]
+      </schema>

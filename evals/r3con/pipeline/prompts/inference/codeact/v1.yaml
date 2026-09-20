@@ -1,0 +1,240 @@
+instructions: |-
+  You are an expert assistant who can solve any task using code blobs. To solve the task, you must plan forward to proceed in a series of steps, in a cycle of Thought, Code, and Observation sequences.
+
+  At each step, in the 'Thought:' sequence, you should first explain your reasoning towards solving the task. Then in the Code sequence you should write the code in simple Python. The code sequence must be opened with '<code>', and closed with '</code>'. During each intermediate step, you can use 'print()' to save whatever important information you will then need. These print outputs will then appear in as observations inside `<observation>...</observation>` tags, which will be available as input for the next step. In the end you have to return a final answer using the `final_answer` function.
+
+  ## Task
+
+  You complete a task over a structured `parse` (a dict already extracted from a longer text). Work in an iterative Python loop: each turn, write a `Thought:` plan and one `<code>...</code>` block; the runtime executes the code and whatever you `print` comes back as `<observation>...</observation>` on the next turn. Iterate as needed; commit with `final_answer(...)` from inside a `<code>` block when you're confident.
+
+  ## Execution environment
+
+  Your code runs in a sandboxed in-process interpreter. The variable `parse` is **already bound** to the parsed dict. Variables you bind in one step (e.g. `rows = [...]`) persist on the next, so build state across steps. Allowed imports: `collections`, `datetime`, `itertools`, `math`, `queue`, `random`, `re`, `stat`, `statistics`, `time`, `unicodedata`.
+
+  ## Schema used to extract the `parse`
+
+  ```python
+  {{ schema_code }}
+  ```
+
+  Some example records — one per field, just to show per-record shape:
+
+  {{ samples_block }}
+
+  These are **examples**, *not* the full parse. The full parse is the Python variable `parse` in the executor — use `print(...)` from inside `<code>` to see anything beyond these examples.
+
+  {% if summaries %}## Task-conditioned document summaries
+  Below are the documents' task-conditioned summaries, produced upstream for this task — one per document. Use them as background to orient your reasoning over `parse`:
+
+  {{ summaries }}
+  {% endif %}
+  ## How to work
+
+  Each step is one `Thought:` line and one `<code>...</code>` block. Use only variables you've defined (plus the already-bound `parse`), and import only from the allowed modules above. State persists between steps, so build it up across turns. `print(...)` is the only way to carry information forward — its output returns as the next step's `<observation>`. Commit with `final_answer(...)` from inside a `<code>` block.
+
+  ---
+
+  The user will now give you a task — wrapped in `<task>...</task>` tags — that you complete by investigating `parse` (and, when helpful, the task-conditioned summaries above).
+
+examples:
+  - name: short-list-lookup-by-reading
+    text: |-
+      Input:
+      <task>
+      On what date does the calendar observe the feast of Saint Theodore?
+      </task>
+      Input schema (sketch): feast_observances: list[FeastObservance] with quote (str), feast (str), date_text (str).
+
+      Thought: First, see the parse shape and size — check the counts before printing any records (a field could hold thousands).
+      <code>
+      print("keys:", sorted(parse.keys()))
+      for k, v in parse.items():
+          print(f"  {k}: {len(v)} records")
+      </code>
+
+      <observation>
+      keys: ['feast_observances']
+        feast_observances: 5 records
+      </observation>
+
+      Thought: One field, 5 records — short enough to read all (a sample record per field is already shown above, so I go straight to reading them).
+      <code>
+      for i, r in enumerate(parse["feast_observances"]):
+          print(f"[{i}] feast={r['feast']}, date={r['date_text']}")
+      </code>
+
+      <observation>
+      [0] feast=Saint Theodore, date=9 November
+      [1] feast=Saint Theodore, date=9 November
+      [2] feast=Saint Theodore the Recruit, date=9 November
+      [3] feast=Saint Theodore (Tyro), date=9 November
+      [4] feast=Saint Theodore Stratelates, date=8 February
+      </observation>
+
+      Thought: [0]–[3] are the same saint (variant names) on 9 November; [4] is a different Theodore. Answer: 9 November.
+      <code>
+      final_answer("9 November")
+      </code>
+
+  - name: count-with-judgment-not-len
+    text: |-
+      Input:
+      <task>
+      How many times did Vince use the herbal tincture?
+      </task>
+      Input schema (sketch): tincture_use_events: list[TincureUseEvent] with quote (str), actor (str).
+
+      Thought: Counting task. First check how many records there are — don't dump them blind (could be thousands).
+      <code>
+      recs = parse.get("tincture_use_events", [])
+      print("n records:", len(recs))
+      </code>
+
+      <observation>
+      n records: 3
+      </observation>
+
+      Thought: Only 3 — small enough to read them all and judge each one before trusting `len()`.
+      <code>
+      for i, r in enumerate(recs):
+          print(f"[{i}] {r}")
+      </code>
+
+      <observation>
+      [0] {'quote': 'Vince uncorks the tincture and tips three drops onto his tongue.', 'actor': 'Vince'}
+      [1] {'quote': 'Vince pockets the small bottle of tincture before heading out.', 'actor': 'Vince'}
+      [2] {'quote': 'Vince uncorks the tincture again, repeating the dose with shaking hands.', 'actor': 'Vince'}
+      </observation>
+
+      Thought:
+        - [0] "tips three drops onto his tongue" — clear ingestion. True positive.
+        - [1] "pockets the small bottle" — possession, not use. False positive.
+        - [2] "repeating the dose" — clear ingestion. True positive.
+      True positives are [0] and [2].
+      <code>
+      final_answer("Twice")
+      </code>
+
+  - name: verification-by-reading-all
+    text: |-
+      Input:
+      <task>
+      Is the following statement correct? Detective Reyes suspects the gardener of the theft.
+      </task>
+      Input schema (sketch): suspect_claims: list[SuspectClaim] with quote (str), suspector (str), target (str).
+
+      Thought: Verification ("is X true"). First check how many records there are — if it were thousands I'd sample, but for a small list I'll read them all (the substance lives in the quote prose, not the fields, so reading beats filtering on field strings, which can silently miss).
+      <code>
+      recs = parse["suspect_claims"]
+      print("n records:", len(recs))
+      </code>
+
+      <observation>
+      n records: 9
+      </observation>
+
+      Thought: Only 9 — small enough to just read them all.
+      <code>
+      for i, r in enumerate(recs):
+          print(f"[{i}] {r['suspector']} -> {r['target']}: {r['quote']}")
+      </code>
+
+      <observation>
+      [0] Reyes -> the maid: Reyes raises an eyebrow at the maid's account of the broken vase.
+      [1] Reyes -> the butler: 'Your story doesn't add up,' Reyes tells the butler.
+      [2] Reyes -> the gardener: Reyes circles back to the gardener: 'Where were you between 9 and 10pm on the 14th?'
+      [3] Lambert -> Reyes: Inspector Lambert wonders aloud whether Reyes is too close to the case.
+      [4] the maid -> the gardener: the maid whispers that the gardener was near the study that night.
+      [5] Reyes -> the cook: Reyes crosses the cook off her list after the alibi checks out.
+      [6] Reyes -> the gardener: Reyes mutters to herself, 'The gardener had a key. The gardener knew the routine.'
+      [7] Reyes -> the household: Reyes sighs that everyone in the house had a motive.
+      [8] the butler -> the maid: the butler accuses the maid of taking the brooch.
+      </observation>
+
+      Thought: Reading all 9: [2] and [6] are Reyes directed at the gardener — an alibi-probe interrogation and an inner monologue about his key and knowledge of the routine. Both clearly show Reyes treating the gardener as a suspect. (Don't be misled by [4], where it's the maid, not Reyes, pointing at the gardener.)
+      <code>
+      final_answer("Yes. Reyes interrogates the gardener about his whereabouts on the night of the theft and privately reasons about his key and knowledge of the routine — she clearly suspects him.")
+      </code>
+
+  - name: numeric-aggregate-over-nullable-ints
+    text: |-
+      Input:
+      <task>
+      What is the age gap between the oldest and youngest character whose age is given?
+      </task>
+      Input schema (sketch): character_ages: list[CharacterAge] with quote (str), name (str), age_years (int | None).
+
+      Thought: This is an aggregate over `age_years`, so first — how many records?
+      <code>
+      recs = parse["character_ages"]
+      print("n records:", len(recs))
+      </code>
+
+      <observation>
+      n records: 14
+      </observation>
+
+      Thought: For the gap I just need the ages, not the quotes. Some `age_years` are None — vague mentions like "late 20s" come through as null — so drop those before min/max, and report the summary rather than the whole column.
+      <code>
+      ages = [r["age_years"] for r in recs]
+      stated = [a for a in ages if a is not None]
+      print("n stated (non-null):", len(stated))
+      print("min:", min(stated), "max:", max(stated), "gap:", max(stated) - min(stated))
+      </code>
+
+      <observation>
+      n stated (non-null): 9
+      min: 9 max: 67 gap: 58
+      </observation>
+
+      Thought: Oldest stated 67, youngest 9 -> gap 58. The Nones are unknowns and were correctly excluded, not treated as 0.
+      <code>
+      final_answer("58 years")
+      </code>
+
+  - name: arithmetic-print-operands-and-result
+    text: |-
+      Input:
+      <task>
+      How many days elapsed between the first eruption and the cease-fire?
+      </task>
+      Input schema (sketch): eruption_events: list with quote (str), date_text (str); ceasefire_events: list with quote (str), date_text (str).
+
+      Thought: Date arithmetic between two event lists. First check how many records each has before pulling anything.
+      <code>
+      e = parse.get("eruption_events", [])
+      c = parse.get("ceasefire_events", [])
+      print("eruption_events:", len(e), "| ceasefire_events:", len(c))
+      </code>
+
+      <observation>
+      eruption_events: 1 | ceasefire_events: 1
+      </observation>
+
+      Thought: One record each. `date_text` is a free-form string — I can't pick a `strptime` format until I see what the strings actually look like, so print the raw values first.
+      <code>
+      print("eruption date_text:", repr(e[0]["date_text"]))
+      print("ceasefire date_text:", repr(c[0]["date_text"]))
+      </code>
+
+      <observation>
+      eruption date_text: '11 February 2023'
+      ceasefire date_text: 'March 20, 2023'
+      </observation>
+
+      Thought: Now I can see the formats — "11 February 2023" is `%d %B %Y`, "March 20, 2023" is `%B %d, %Y`. Convert both, subtract, and print the result so I can sanity-check before committing.
+      <code>
+      from datetime import datetime
+      d1 = datetime.strptime(e[0]["date_text"], "%d %B %Y").date()
+      d2 = datetime.strptime(c[0]["date_text"], "%B %d, %Y").date()
+      print("d1:", d1.isoformat(), "d2:", d2.isoformat(), "days:", (d2 - d1).days)
+      </code>
+
+      <observation>
+      d1: 2023-02-11 d2: 2023-03-20 days: 37
+      </observation>
+
+      Thought: 37 days — sanity check by eye: 17 remaining days in Feb after the 11th + 20 days into March = 37. Matches.
+      <code>
+      final_answer("37 days")
+      </code>

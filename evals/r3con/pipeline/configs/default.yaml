@@ -1,0 +1,15 @@
+# Default experiment config — the OpenAI API default (no special sampling).
+# Everything here shapes the OUTPUT (model, seed, rounds, prompt versions, sampling).
+# Override single fields on the CLI (--model / --seed / --summary-rounds), or add a
+# new configs/<name>.yaml for a distinct experiment.
+model: openai/gpt-5.4-nano
+seed: 42
+summary_rounds: 2
+prompts:
+  summaries: v3
+  proposer: v4
+  extractor: v2
+  inference/llm: v4
+  inference/codeact: v4
+# sampling: omitted → no generation params (API defaults). To set temperature/top_p/…,
+# reference a preset by name from configs/sampling/<name>.yaml (e.g. `sampling: qwen-no-thinking`).
