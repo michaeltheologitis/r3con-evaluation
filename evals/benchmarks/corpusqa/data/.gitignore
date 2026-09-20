@@ -1,0 +1,9 @@
+# Lazily-downloaded CorpusQA tier files — fetched on first get_task_ids()/get_task()
+# by download_data.ensure (128k ≈ 103 MB, 1m ≈ 1 GB, from Hugging Face).
+# NOT vendored — far too large, and reconstructible on demand. The small offset
+# index built over each tier (loader._build_index) is likewise regenerable.
+/*_4domains.jsonl
+/*_index_*.jsonl
+/*.jsonl.part
+/*.index.part
+/.*.lock

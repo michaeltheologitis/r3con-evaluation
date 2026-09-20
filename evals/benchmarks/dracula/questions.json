@@ -1,0 +1,9 @@
+[
+  {
+    "id": "death_toll",
+    "question": "On the voyage to England and during his stay there, how many people did Dracula kill, either directly or indirectly, and who were they?",
+    "answer": "13 — (1) the Demeter's crew of nine, (2) Mr. Swales, (3) Mrs. Westenra, (4) Lucy Westenra, (5) Renfield",
+    "answer_lenient": "12 — (1) the Demeter's crew of nine, (2) Mrs. Westenra, (3) Lucy Westenra, (4) Renfield",
+    "notes": "Window: from setting sail for England (the castle child and its mother die before departure — excluded) until fleeing England (Skinsky and Quincey Morris die after — excluded). The crew of nine is counted from the log's muster (five hands, two mates, cook, captain); identifying them collectively is correct (only a couple are named in the log). Hawkins and Arthur's father die of natural causes within the window and must not be listed. `answer_lenient` is the SECOND, lenient gold: Mr. Swales is the most inferential attribution in the roster (10 August, found dead on the churchyard seat with a broken neck 'in some sort of fright' — no wolf, no bite, and Dracula is linked only by having landed at Whitby two days earlier), so an answer that omits him is graded correct under the lenient metric. Everything else stays strict: the crew must still be nine, Mrs. Westenra / Lucy / Renfield must all appear, and no extra victims. See judge.py — the two golds are judged by the SAME prompt in two calls, and lenient = max(strict, alt), so lenient is always a superset of strict."
+  }
+]

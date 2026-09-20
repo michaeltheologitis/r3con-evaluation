@@ -1,0 +1,135 @@
+[project]
+name = "r3con-evaluation"
+version = "0.1.0"
+description = "Evaluation harness: grounded-reasoning benchmarks and published baselines"
+readme = "README.md"
+requires-python = ">=3.13"
+# Core runtime deps. With these, `pip install .` gives a working harness: the three
+# benchmark loaders, the grading LLM calls (the judges, via LiteLLM, inside `score`),
+# and the analysis CLI. Each baseline adds its own extra — see
+# [project.optional-dependencies] below; the harness layer never imports them.
+dependencies = [
+    "datasets>=3.0",
+    "litellm>=1.50.0",
+    "pydantic>=2.0",
+    "python-dotenv>=1.0",
+    "rich>=15.0.0",
+    "tenacity>=9.1.4",
+]
+
+[project.optional-dependencies]
+# Test runner.
+test = [
+    "pytest>=8.0",
+]
+# Notebook + plotting tooling.
+full = [
+    "r3con-evaluation[test]",
+    "ipykernel>=7.2.0",
+    "ipywidgets>=8.1.8",
+    "matplotlib>=3.10.8",
+    "pandas>=2.3",
+]
+# StructRAG baseline — OPTIONAL. `transformers` provides the served model's tokenizer +
+# config, which only SHARPEN StructRAG's reactive truncate-to-fit (precise token clipping
+# + HF window detection). The pipeline + the reactive truncation work WITHOUT it: the
+# window is read from the server's context-length error (else a 256K fallback) and the clip
+# uses a conservative char estimate. Lazy-imported (no `transformers` at module load).
+structrag = [
+    "transformers>=4.40",
+]
+# A-RAG baseline — vendored byte-for-byte under evals/baselines/arag/upstream/ (so the
+# package itself is NOT a dependency; PyPI `arag` is an unrelated project). The vendored
+# agent + tools need `tiktoken` (the agent's own token accounting) and `numpy`
+# (semantic_search's vector math). The method's dense retrieval is re-seamed to OpenAI
+# embeddings (the project's embeddings-always-openai rule), so sentence-transformers is
+# NOT needed. `transformers` is OPTIONAL + lazy: it only sharpens the dynamic per-model
+# context-window / tokenizer detection for open-source models (HF config/tokenizer);
+# without it the budget falls back to litellm.get_model_info + a char estimate.
+arag = [
+    "semantic-text-splitter>=0.15",
+    "tiktoken>=0.5",
+    "numpy>=1.24",
+    "transformers>=4.40",
+]
+rlms = [
+    "rlms>=0.1.2",
+]
+# CodeAct baseline — smolagents' CodeAgent (the reference CodeAct implementation), used via its
+# public API (NOT vendored — a maintained agent framework, like rlms). Light: smolagents reuses the
+# existing litellm + rich and pulls only jinja2/huggingface-hub + small deps (no torch/pandas). The
+# agent reads the offloaded documents via code; no embeddings, no tool-calling endpoint needed.
+codeact = [
+    "smolagents>=1.26.0",
+]
+# RAPTOR baseline — recursive-summary-tree retrieval (Sarthi et al., ICLR 2024), VENDORED
+# byte-for-byte under raptor/upstream/ (MIT). We inject litellm/OpenAI model backends, so
+# FaissRetriever/SBert/T5 are unused — but RAPTOR's package __init__ imports FaissRetriever at
+# load time, so `faiss-cpu` (RAPTOR's own dep) is still required to import the package. These
+# are the deps the vendored tree builder / clustering / retriever / __init__ pull at load.
+raptor = [
+    "faiss-cpu>=1.7",
+    "umap-learn>=0.5",
+    "scikit-learn>=1.3",
+    "scipy>=1.10",
+    "numpy>=1.24",
+    "tiktoken>=0.5",
+    "tqdm>=4.66",
+    "sentence-transformers>=2.2",
+]
+# MemAgent baseline — recurrent fixed-size memory over token chunks (arXiv 2507.02259).
+# NOT vendored as a library — upstream ships a demo + a verl-based eval harness — so the
+# connector REPRODUCES the loop (prompts verbatim; `upstream/quickstart.py` is the provenance
+# anchor). The ONLY dep is `transformers`: the served model's tokenizer drives the token-window
+# chunker (lazy-imported — the module loads without it). The method IS the RL-trained checkpoint
+# (`BytedTsinghua-SIA/RL-MemoryAgent-14B`, a standard Qwen2.5 → vLLM-servable), used via the
+# harness litellm seam (vLLM); no OpenAI, no embeddings.
+memagent = [
+    "transformers>=4.40",
+]
+# HippoRAG 2 baseline — OpenIE knowledge graph + Personalized PageRank (Gutiérrez et al.,
+# ICML 2025), VENDORED byte-for-byte under hipporag/upstream/ (MIT). We inject a litellm LLM
+# seam + an OpenAI embedding seam + our own chunker, so the local model backends
+# (vllm/transformers/gritlm embedders + LLMs) are trimmed off the import path and NOT needed;
+# these are the deps the vendored graph/OpenIE/retrieval code + embedding stores pull at load:
+# `python-igraph` (the graph + PPR), `torch` (the synonym-edge KNN in utils/embed_utils —
+# already in our ecosystem via linearrag), `tiktoken` (our chunker + embed truncation),
+# `pandas`/`numpy`/`scipy` (the embedding stores + math), `filelock`/`packaging` (vendored
+# client utils). No dspy (the triple filter is a baked-prompt LLM call, not runtime dspy).
+hipporag = [
+    "python-igraph>=0.11",
+    "torch>=2.2",
+    "tiktoken>=0.5",
+    "pandas>=2.0",
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "filelock>=3.12",
+    "packaging>=23",
+]
+[tool.setuptools.packages.find]
+include = ["evals*"]
+
+[tool.setuptools.package-data]
+"evals.benchmarks.loong" = ["data/loong.jsonl"]
+"evals.benchmarks.dracula" = ["docs/*.txt", "questions.json", "manifest.json", "editorial_note.txt"]
+# A-RAG's vendored ReAct system prompt (loaded by the connector at runtime).
+"evals.baselines.arag.upstream.agent" = ["prompts/*.txt"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# The editable install only exposes the `evals` package; put the repo root on the
+# path too so tests can import root-level helpers like `scripts/`.
+pythonpath = ["."]
+# The markers below gate tests that hit a real LLM (and so cost a few cents). They are
+# de-selected by default; run one with e.g. `pytest -m judge` / `-m structrag` / `-m arag`.
+markers = [
+    "judge: end-to-end test that calls the real LLM judge (LooGLE score())",
+    "live: end-to-end test of the scoring wiring (score.json scoreboard) against the real grader LLM",
+    "structrag: end-to-end test that runs the StructRAG baseline pipeline against the real model",
+    "arag: end-to-end test that runs the A-RAG baseline (agent + tools + embeddings) against the real model",
+    "readagent: end-to-end test that runs the ReadAgent baseline (paginate/gist/look-up) against the real model",
+    "rlm: end-to-end test that runs the RLM baseline (REPL code-agent) against a real vLLM endpoint",
+    "codeact: end-to-end test that runs the CodeAct baseline (smolagents CodeAgent) against the real model",
+    "memagent: end-to-end test that runs the MemAgent baseline against a served RL-MemoryAgent vLLM ($MEMAGENT_BASE_URL)",
+]
+addopts = "-m 'not judge and not live and not structrag and not arag and not readagent and not rlm and not codeact and not memagent'"

@@ -1,0 +1,8 @@
+# Lazily-downloaded Loong document pool — fetched on first get_documents() call
+# by loader._ensure_doc_dir (~34 MB doc.zip from the upstream OSS bucket, then
+# extracted to doc/). NOT vendored — too large, and reconstructible on demand.
+# The questions file (loong.jsonl) IS vendored and tracked.
+/doc.zip
+/doc/
+/__MACOSX/
+/.doc.lock

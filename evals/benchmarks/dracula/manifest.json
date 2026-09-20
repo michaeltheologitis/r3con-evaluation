@@ -1,0 +1,370 @@
+[
+  {
+    "doc": 1,
+    "file": "01_jonathan_harker_s_journal.txt",
+    "title": "Jonathan Harker's Journal",
+    "type": "journal",
+    "sections": 16,
+    "words": 43680
+  },
+  {
+    "doc": 2,
+    "file": "02_letter_from_miss_mina_murray_to_miss_lucy_westenra.txt",
+    "title": "Letter from Miss Mina Murray to Miss Lucy Westenra",
+    "type": "letter",
+    "sections": 1,
+    "words": 382
+  },
+  {
+    "doc": 3,
+    "file": "03_letter_lucy_westenra_to_mina_murray.txt",
+    "title": "Letter, Lucy Westenra to Mina Murray",
+    "type": "letter",
+    "sections": 1,
+    "words": 579
+  },
+  {
+    "doc": 4,
+    "file": "04_letter_lucy_westenra_to_mina_murray.txt",
+    "title": "Letter, Lucy Westenra to Mina Murray",
+    "type": "letter",
+    "sections": 1,
+    "words": 2023
+  },
+  {
+    "doc": 5,
+    "file": "05_dr_seward_s_diary.txt",
+    "title": "Dr. Seward's Diary",
+    "type": "journal",
+    "sections": 36,
+    "words": 61193
+  },
+  {
+    "doc": 6,
+    "file": "06_letter_quincey_p_morris_to_hon_arthur_holmwood.txt",
+    "title": "Letter, Quincey P. Morris to Hon. Arthur Holmwood",
+    "type": "letter",
+    "sections": 1,
+    "words": 205
+  },
+  {
+    "doc": 7,
+    "file": "07_telegram_from_arthur_holmwood_to_quincey_p_morris.txt",
+    "title": "Telegram from Arthur Holmwood to Quincey P. Morris",
+    "type": "telegram",
+    "sections": 1,
+    "words": 26
+  },
+  {
+    "doc": 8,
+    "file": "08_mina_murray_s_journal.txt",
+    "title": "Mina Murray's Journal",
+    "type": "journal",
+    "sections": 5,
+    "words": 9336
+  },
+  {
+    "doc": 9,
+    "file": "09_cutting_from_the_dailygraph_8_august.txt",
+    "title": "Cutting From \"The Dailygraph,\" 8 August",
+    "type": "newspaper_cutting",
+    "sections": 1,
+    "words": 2961
+  },
+  {
+    "doc": 10,
+    "file": "10_log_of_the_demeter.txt",
+    "title": "Log Of The \"Demeter.\"",
+    "type": "ships_log",
+    "sections": 1,
+    "words": 1853
+  },
+  {
+    "doc": 11,
+    "file": "11_letter_samuel_f_billington_son_solicitors_whitby_to_messrs_c.txt",
+    "title": "Letter, Samuel F. Billington & Son, Solicitors, Whitby, to Messrs. Carter, Paterson & Co., London",
+    "type": "letter",
+    "sections": 1,
+    "words": 286
+  },
+  {
+    "doc": 12,
+    "file": "12_letter_messrs_carter_paterson_co_london_to_messrs_billington.txt",
+    "title": "Letter, Messrs. Carter, Paterson & Co., London, to Messrs. Billington & Son, Whitby",
+    "type": "letter",
+    "sections": 1,
+    "words": 68
+  },
+  {
+    "doc": 13,
+    "file": "13_letter_sister_agatha_hospital_of_st_joseph_and_ste_mary_buda.txt",
+    "title": "Letter, Sister Agatha, Hospital of St. Joseph and Ste. Mary, Buda-Pesth, to Miss Wilhelmina Murray",
+    "type": "letter",
+    "sections": 1,
+    "words": 414
+  },
+  {
+    "doc": 14,
+    "file": "14_letter_mina_harker_to_lucy_westenra.txt",
+    "title": "Letter, Mina Harker to Lucy Westenra",
+    "type": "letter",
+    "sections": 1,
+    "words": 1385
+  },
+  {
+    "doc": 15,
+    "file": "15_letter_lucy_westenra_to_mina_harker.txt",
+    "title": "Letter, Lucy Westenra to Mina Harker",
+    "type": "letter",
+    "sections": 1,
+    "words": 218
+  },
+  {
+    "doc": 16,
+    "file": "16_lucy_westenra_s_diary.txt",
+    "title": "Lucy Westenra's Diary",
+    "type": "journal",
+    "sections": 4,
+    "words": 944
+  },
+  {
+    "doc": 17,
+    "file": "17_letter_arthur_holmwood_to_dr_seward.txt",
+    "title": "Letter, Arthur Holmwood to Dr. Seward",
+    "type": "letter",
+    "sections": 1,
+    "words": 251
+  },
+  {
+    "doc": 18,
+    "file": "18_telegram_arthur_holmwood_to_seward.txt",
+    "title": "Telegram, Arthur Holmwood to Seward",
+    "type": "telegram",
+    "sections": 1,
+    "words": 30
+  },
+  {
+    "doc": 19,
+    "file": "19_letter_from_dr_seward_to_arthur_holmwood.txt",
+    "title": "Letter from Dr. Seward to Arthur Holmwood",
+    "type": "letter",
+    "sections": 1,
+    "words": 881
+  },
+  {
+    "doc": 20,
+    "file": "20_letter_abraham_van_helsing_m_d_d_ph_d_lit_etc_etc_to_dr_sewa.txt",
+    "title": "Letter, Abraham Van Helsing, M. D., D. Ph., D. Lit., etc., etc., to Dr. Seward",
+    "type": "letter",
+    "sections": 1,
+    "words": 222
+  },
+  {
+    "doc": 21,
+    "file": "21_letter_dr_seward_to_hon_arthur_holmwood.txt",
+    "title": "Letter, Dr. Seward to Hon. Arthur Holmwood",
+    "type": "letter",
+    "sections": 1,
+    "words": 925
+  },
+  {
+    "doc": 22,
+    "file": "22_telegram_seward_london_to_van_helsing_amsterdam.txt",
+    "title": "Telegram, Seward, London, to Van Helsing, Amsterdam",
+    "type": "telegram",
+    "sections": 1,
+    "words": 12
+  },
+  {
+    "doc": 23,
+    "file": "23_telegram_seward_london_to_van_helsing_amsterdam.txt",
+    "title": "Telegram, Seward, London, to Van Helsing, Amsterdam",
+    "type": "telegram",
+    "sections": 1,
+    "words": 20
+  },
+  {
+    "doc": 24,
+    "file": "24_telegram_seward_london_to_van_helsing_amsterdam.txt",
+    "title": "Telegram, Seward, London, to Van Helsing, Amsterdam",
+    "type": "telegram",
+    "sections": 1,
+    "words": 31
+  },
+  {
+    "doc": 25,
+    "file": "25_letter_dr_seward_to_hon_arthur_holmwood.txt",
+    "title": "Letter, Dr. Seward to Hon. Arthur Holmwood",
+    "type": "letter",
+    "sections": 1,
+    "words": 174
+  },
+  {
+    "doc": 26,
+    "file": "26_the_pall_mall_gazette_18_september.txt",
+    "title": "\"The Pall Mall Gazette,\" 18 September",
+    "type": "newspaper_cutting",
+    "sections": 1,
+    "words": 2043
+  },
+  {
+    "doc": 27,
+    "file": "27_telegram_van_helsing_antwerp_to_seward_carfax.txt",
+    "title": "Telegram, Van Helsing, Antwerp, to Seward, Carfax",
+    "type": "telegram",
+    "sections": 1,
+    "words": 59
+  },
+  {
+    "doc": 28,
+    "file": "28_memorandum_left_by_lucy_westenra.txt",
+    "title": "Memorandum left by Lucy Westenra",
+    "type": "memorandum",
+    "sections": 1,
+    "words": 1180
+  },
+  {
+    "doc": 29,
+    "file": "29_letter_mina_harker_to_lucy_westenra.txt",
+    "title": "Letter, Mina Harker to Lucy Westenra",
+    "type": "letter",
+    "sections": 1,
+    "words": 542
+  },
+  {
+    "doc": 30,
+    "file": "30_report_from_patrick_hennessey_m_d_m_r_c_s_l_k_q_c_p_i_etc_et.txt",
+    "title": "Report from Patrick Hennessey, M. D., M. R. C. S. L. K. Q. C. P. I., etc., etc., to John Seward, M. D",
+    "type": "report",
+    "sections": 1,
+    "words": 996
+  },
+  {
+    "doc": 31,
+    "file": "31_letter_mina_harker_to_lucy_westenra.txt",
+    "title": "Letter, Mina Harker to Lucy Westenra",
+    "type": "letter",
+    "sections": 1,
+    "words": 369
+  },
+  {
+    "doc": 32,
+    "file": "32_mina_harker_s_journal.txt",
+    "title": "Mina Harker's Journal",
+    "type": "journal",
+    "sections": 15,
+    "words": 20056
+  },
+  {
+    "doc": 33,
+    "file": "33_the_westminster_gazette_25_september.txt",
+    "title": "\"The Westminster Gazette,\" 25 September",
+    "type": "newspaper_cutting",
+    "sections": 1,
+    "words": 407
+  },
+  {
+    "doc": 34,
+    "file": "34_the_westminster_gazette_25_september.txt",
+    "title": "\"The Westminster Gazette,\" 25 September",
+    "type": "newspaper_cutting",
+    "sections": 1,
+    "words": 98
+  },
+  {
+    "doc": 35,
+    "file": "35_letter_van_helsing_to_mrs_harker.txt",
+    "title": "Letter, Van Helsing to Mrs. Harker",
+    "type": "letter",
+    "sections": 1,
+    "words": 228
+  },
+  {
+    "doc": 36,
+    "file": "36_telegram_mrs_harker_to_van_helsing.txt",
+    "title": "Telegram, Mrs. Harker to Van Helsing",
+    "type": "telegram",
+    "sections": 1,
+    "words": 27
+  },
+  {
+    "doc": 37,
+    "file": "37_letter_by_hand_van_helsing_to_mrs_harker.txt",
+    "title": "Letter (by hand), Van Helsing to Mrs. Harker",
+    "type": "letter",
+    "sections": 1,
+    "words": 174
+  },
+  {
+    "doc": 38,
+    "file": "38_letter_mrs_harker_to_van_helsing.txt",
+    "title": "Letter, Mrs. Harker to Van Helsing",
+    "type": "letter",
+    "sections": 1,
+    "words": 173
+  },
+  {
+    "doc": 39,
+    "file": "39_note_left_by_van_helsing_in_his_portmanteau_berkeley_hotel_d.txt",
+    "title": "Note left by Van Helsing in his portmanteau, Berkeley Hotel directed to John Seward, M. D",
+    "type": "note",
+    "sections": 1,
+    "words": 386
+  },
+  {
+    "doc": 40,
+    "file": "40_letter_mitchell_sons_and_candy_to_lord_godalming.txt",
+    "title": "Letter, Mitchell, Sons and Candy to Lord Godalming",
+    "type": "letter",
+    "sections": 1,
+    "words": 121
+  },
+  {
+    "doc": 41,
+    "file": "41_dr_seward_s_phonograph_diary_spoken_by_van_helsing.txt",
+    "title": "Dr. Seward's Phonograph Diary, Spoken By Van Helsing",
+    "type": "phonograph_message",
+    "sections": 1,
+    "words": 410
+  },
+  {
+    "doc": 42,
+    "file": "42_telegram_october_24th.txt",
+    "title": "Telegram, October 24th",
+    "type": "telegram",
+    "sections": 1,
+    "words": 24
+  },
+  {
+    "doc": 43,
+    "file": "43_mina_harker_s_memorandum.txt",
+    "title": "Mina Harker's Memorandum",
+    "type": "memorandum",
+    "sections": 1,
+    "words": 1011
+  },
+  {
+    "doc": 44,
+    "file": "44_memorandum_by_abraham_van_helsing.txt",
+    "title": "Memorandum by Abraham Van Helsing",
+    "type": "memorandum",
+    "sections": 1,
+    "words": 2665
+  },
+  {
+    "doc": 45,
+    "file": "45_dr_van_helsing_s_memorandum.txt",
+    "title": "Dr. Van Helsing's Memorandum",
+    "type": "memorandum",
+    "sections": 1,
+    "words": 1340
+  },
+  {
+    "doc": 46,
+    "file": "46_note.txt",
+    "title": "Note",
+    "type": "note",
+    "sections": 1,
+    "words": 348
+  }
+]
