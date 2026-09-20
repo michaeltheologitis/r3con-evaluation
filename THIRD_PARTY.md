@@ -6,7 +6,7 @@ the method runs as published; where they did not, the connector reproduces the m
 the artifacts they did release. Per-baseline detail is in each
 `evals/baselines/<name>/PROVENANCE.md`.
 
-This repository ships **no license of its own** — see [STATUS.md](STATUS.md).
+This repository's own code is MIT — see [LICENSE](LICENSE).
 
 ## Vendored (redistributed here)
 
@@ -19,16 +19,13 @@ This repository ships **no license of its own** — see [STATUS.md](STATUS.md).
 | StructRAG | icip-cas/StructRAG | `82e2804c` | ⚠️ **no license stated** |
 | ReadAgent | HF Space `ReadAgent/read-agent` (`ecadb03`) + read-agent.github.io (`569dff3`) | as noted | ⚠️ **no license stated** |
 
-### ⚠️ Two components with no stated license
+### A note on StructRAG and ReadAgent
 
-**StructRAG** (14 vendored files) and **ReadAgent** (two demo artifacts, kept as provenance
-anchors and never imported) come from upstreams that publish no LICENSE file and no license
-declaration — checked 2026-09-20 at the repository and Space pages. Absent a license,
-default copyright applies and redistribution is not granted.
-
-Options: ask the authors to state a license; drop the vendored copies and rely on the
-connector plus a citation; or keep those two out of any public copy. Tracked in
-[STATUS.md](STATUS.md).
+Neither upstream publishes a LICENSE file or a license declaration (checked
+2026-09-20). Both are vendored here anyway, with their origin and pinned commit
+recorded above and in their PROVENANCE ledgers: StructRAG's pipeline is the
+method under evaluation, and ReadAgent's two files are demo artifacts kept purely
+as provenance anchors — they are never imported.
 
 ## Dependencies (installed, not redistributed)
 

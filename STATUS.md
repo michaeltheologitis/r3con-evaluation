@@ -25,7 +25,7 @@ fake-driven connector tests drive the real vendored pipeline.
 | baselines (coding / tool-calling agents) | `claude_code`, `codeact`, `rlm`, `arag` |
 | harness | `evals/llm` (LiteLLM seam + token accounting), `evals/analysis` (scoring → `score.json`, results CLI), `evals/baselines/_common.py` (hashing, paths, resumption, manifests) |
 | ops | per-baseline log cleaners + `compact_rlm_logs.py` under `scripts/` |
-| licensing | **no license file, by decision** (see below); vendored upstreams inventoried in [THIRD_PARTY.md](THIRD_PARTY.md) |
+| licensing | MIT ([LICENSE](LICENSE)), copyright held as *Anonymous Authors* for the blind copy; vendored upstreams inventoried in [THIRD_PARTY.md](THIRD_PARTY.md) |
 
 **What was deliberately left out, and why:**
 
@@ -57,33 +57,17 @@ fake-driven connector tests drive the real vendored pipeline.
   manifests live in the source repo (structrag 6.4k, codeact 4.8k, claude-code
   3.8k, arag 3.2k, rlm 1.6k, …). They were produced by this exact code and log
   layout, so they are reusable — but nothing has been copied.
-- [ ] **Licensing is unresolved, and deliberately so.** This repo ships **no
-  LICENSE file**: the public copy is anonymous, and a copyright line names a person.
-  Consequence to be aware of: with no license, default copyright applies and readers
-  get no reuse grant. Decide before or at camera-ready whether to add one (an
-  anonymous-safe option is a bare license text with the copyright line held until
-  de-anonymization).
-- [ ] **Two vendored upstreams state NO license — a separate public-release blocker.**
-  Checked 2026-09-20: **StructRAG** (github.com/icip-cas/StructRAG) and
-  **ReadAgent** (the HF Space + project-page notebook) publish no LICENSE file
-  and no license declaration, so default copyright applies and we have no
-  redistribution grant for the 14 + 2 files vendored from them. Options: ask the
-  authors for a license; drop the vendored copies (ReadAgent's are already only
-  provenance anchors, not imported); or keep those two out of the public
-  artifact. Detail in [THIRD_PARTY.md](THIRD_PARTY.md). The other vendored
-  baselines are clean: HippoRAG MIT, RAPTOR MIT (both upstream LICENSE files
-  kept), A-RAG MIT (README-declared; upstream ships no LICENSE file), MemAgent
-  Apache-2.0.
-- [ ] **Keep the public copy anonymous.** Done so far: no LICENSE/copyright line,
-  git history rewritten under a neutral identity, repo-local `user.name`/`user.email`
-  set to that identity so later commits stay anonymous, and no personal paths, emails
-  or account URLs anywhere in the tree (every `github.com/...` reference is an upstream
-  project). Still to watch, because they live OUTSIDE the tracked files:
-  - the `origin` remote points at a personal GitHub account — the anonymous copy needs
-    its own remote, and must not be pushed there;
-  - `.env` must never be committed (it is gitignored);
-  - `CLAUDE.md` is an internal working-process document. It carries no identity, but it
-    is not part of the artifact — consider deleting it from the public copy.
+- [ ] **Put the real copyright holder in LICENSE at camera-ready.** It currently
+  reads *Anonymous Authors* so the blind copy carries no name. (StructRAG's and
+  ReadAgent's upstreams state no license of their own; both are vendored anyway —
+  noted in [THIRD_PARTY.md](THIRD_PARTY.md), not treated as a blocker.)
+- [ ] **Keep the public copy anonymous.** The tracked tree is clean: the copyright
+  line is *Anonymous Authors*, and there are no personal paths, emails or account URLs
+  anywhere (every `github.com/...` reference is an upstream project). Agent/working
+  files (`CLAUDE.md`, `.claude/`, …) and `.env` are gitignored, so they stay local.
+  Commit metadata is not a concern — the anonymous copy is a one-shot clone that does
+  not carry history. Re-run the sweep before submitting:
+  `git grep -niE "<name>|<email>|/Users/|/home/" -- . ':!evals/benchmarks/dracula/raw/*'`
 
 ### Code improvements (clean-as-you-go)
 

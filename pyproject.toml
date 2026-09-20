@@ -3,6 +3,8 @@ name = "r3con-evaluation"
 version = "0.1.0"
 description = "Evaluation harness: grounded-reasoning benchmarks and published baselines"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.13"
 # Core runtime deps. With these, `pip install .` gives a working harness: the three
 # benchmark loaders, the grading LLM calls (the judges, via LiteLLM, inside `score`),
