@@ -33,6 +33,8 @@ dist/
 
 # Agent / working-process files — local only, not part of the artifact
 CLAUDE.md
+STATUS.md
+THIRD_PARTY.md
 AGENTS.md
 .claude/
 .cursor/

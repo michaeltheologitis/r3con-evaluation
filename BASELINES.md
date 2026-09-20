@@ -9,8 +9,6 @@ to understand a method end-to-end before touching its code.
 not a status board. Volatile specifics live elsewhere and are linked, not
 restated:
 
-- **Current direction + which baselines are wired** → [STATUS.md](STATUS.md)
-  (the live source of truth; it wins on any disagreement).
 - **Per-baseline deviation ledgers** → each `evals/baselines/<name>/PROVENANCE.md`
   (or `NOTES.md` / `CHANGES.md`). When this doc says "vendored byte-for-byte" or
   "the one deviation is…", the authoritative list is there.
@@ -421,5 +419,4 @@ The same nine baselines, along the axes that actually differ between them.
 | `claude-code` | 🐍🤖 | agent turns | no | Max (Claude) | CLI `modelUsage` (cumulative), token-only |
 
 For the precise per-baseline deviations from upstream, read each
-`evals/baselines/<name>/PROVENANCE.md` (or `NOTES.md`); for current direction and
-what's open, read [STATUS.md](STATUS.md).
+`evals/baselines/<name>/PROVENANCE.md` (or `NOTES.md`).

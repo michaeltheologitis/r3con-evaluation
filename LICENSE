@@ -25,4 +25,5 @@ SOFTWARE.
 This license covers the code written for this repository: the harness, the
 benchmark loaders and judges, the baseline connectors, the runners, the scripts
 and the tests. Third-party source vendored under `evals/baselines/*/upstream/`
-stays under its own authors' terms — see THIRD_PARTY.md.
+stays under its own authors' terms; each baseline's PROVENANCE.md records its
+upstream, the pinned commit and its license.

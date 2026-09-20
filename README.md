@@ -5,7 +5,6 @@ baselines, and one shared contract so any method can be measured against them
 without re-plumbing anything.
 
 - **What each baseline is**, conceptually and as wired → [BASELINES.md](BASELINES.md).
-- **Where the work stands, and what's next** → [STATUS.md](STATUS.md).
 - **Per-baseline deviations from upstream** → `evals/baselines/<name>/PROVENANCE.md`.
 
 ```

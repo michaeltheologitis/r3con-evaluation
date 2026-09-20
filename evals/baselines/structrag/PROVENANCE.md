@@ -1,7 +1,7 @@
 # StructRAG — provenance & deviations
 
 **Upstream:** github.com/icip-cas/StructRAG @ `82e2804c` · **Paper:** ICLR 2025,
-arXiv:2410.08815 · **License:** ⚠️ **none stated upstream** — see [THIRD_PARTY.md](../../../THIRD_PARTY.md).
+arXiv:2410.08815 · **License:** none stated upstream.
 
 Router, structurizer, utilizer and all six prompts are vendored **byte-for-byte** under
 `upstream/`. Per task the router picks one knowledge structure, the structurizer rebuilds

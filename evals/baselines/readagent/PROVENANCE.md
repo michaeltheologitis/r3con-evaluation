@@ -2,7 +2,7 @@
 
 **Upstream:** the HF Space demo `ReadAgent/read-agent` (`ecadb03`) + the project-page
 notebook (`569dff3`) · **Paper:** ICML 2024, arXiv:2402.09727 ·
-**License:** ⚠️ **none stated upstream** — see [THIRD_PARTY.md](../../../THIRD_PARTY.md).
+**License:** none stated upstream.
 
 The authors released no library — only a Gradio demo and a notebook, both vendored under
 `upstream/` as provenance anchors (never imported). The connector **reproduces** the three
