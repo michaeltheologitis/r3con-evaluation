@@ -12,7 +12,7 @@ Coverage:
   synthetic `Document N` title.
 - `_build_query`: loong faithful to upstream (`prompt_template.format(... docs=
   "......")`); corpusqa/dracula mirror the other baselines.
-- `StructRAGLLM`: user-only message, seed + max_tokens + `--config` params passed
+- `StructRAGLLM`: user-only message, seed + max_tokens + `completion_params` passed
   through, usage accumulated across calls into `{total, calls}`.
 - `run_one`: drives the real vendored pipeline with a FAKE llm, asserting the exact
   per-task call graph (route → structurize → decompose → extract → merge) and the
@@ -396,15 +396,6 @@ def test_argparse_rejects_unsupported_accepts_loong() -> None:
 def test_build_run_config_shape_no_index_knobs() -> None:
     cfg = runner.build_run_config(_args(model="Qwen/Qwen3-1.7B", seed=7))
     assert cfg == {"benchmark": "loong", "baseline": "structrag", "model": "qwen3-1-7b", "seed": 7}
-
-
-def test_build_run_config_with_config_folds_params() -> None:
-    from evals.model_sampling import MODEL_SAMPLING_CONFIG
-
-    name = next(iter(MODEL_SAMPLING_CONFIG))
-    cfg = runner.build_run_config(_args(model="m", config=name))
-    assert cfg["config_name"] == name
-    assert cfg["completion_params"] == MODEL_SAMPLING_CONFIG[name]
 
 
 def test_build_child_cmd_targets_structrag_module() -> None:

@@ -12,9 +12,8 @@ task always rebuilds its graph from scratch. Nothing here grades a run — these
 are what an external scoring repo reads.
 
 It DOES resume: the parent scans existing run folders and skips tasks already completed
-for this exact config (model / seed / chunk_size / embedding_model / --config /
-run_version). ``--limit N`` runs the next N PENDING. To force a full re-run, delete the
-baseline dir.
+for this exact config (model / seed / chunk_size / embedding_model / run_version).
+``--limit N`` runs the next N PENDING. To force a full re-run, delete the baseline dir.
 
 Runs on OpenAI OR a vLLM endpoint (``--base-url``) — HippoRAG emits JSON (no tool-calling
 needed); embeddings ALWAYS go to OpenAI. **Expensive** (per-passage OpenIE at index time),
@@ -33,7 +32,6 @@ from evals.baselines import _common
 from evals.baselines.hipporag.chunker import CHUNK_SIZES
 from evals.baselines.hipporag.run import EMBEDDING_MODEL, SUPPORTED_BENCHMARKS, _RUN_VERSION, run_one
 from evals.llm.usage import usage_scope
-from evals.model_sampling import MODEL_SAMPLING_CONFIG
 from evals.settings import DEFAULT_COMPLETION_MODEL
 
 BASELINE = "hipporag"
@@ -50,8 +48,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--model", type=str, default=DEFAULT_COMPLETION_MODEL,
                    help="The completion model — drives OpenIE (NER + triples), the recognition-"
                         "memory triple filter, and the QA reader. OpenAI or vLLM (--base-url).")
-    p.add_argument("--config", type=str, default=None, choices=sorted(MODEL_SAMPLING_CONFIG),
-                   help="Named sampling preset (applies to every completion). Recorded in the config.")
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--base-url", type=str, default=None,
                    help="vLLM endpoint for the completion model (embeddings still go to OpenAI).")
@@ -88,9 +84,6 @@ def build_run_config(args: argparse.Namespace) -> dict:
         "chunk_size": CHUNK_SIZES[args.benchmark],
         "run_version": _RUN_VERSION,
     }
-    if args.config is not None:
-        config["config_name"] = args.config
-        config["completion_params"] = MODEL_SAMPLING_CONFIG[args.config]
     return config
 
 
@@ -117,8 +110,6 @@ def build_child_cmd(args: argparse.Namespace, task_id: str, run_tag: str) -> lis
            "--benchmark", args.benchmark,
            "--model", args.model, "--seed", str(args.seed),
            "--task-id", task_id, "--run-tag", run_tag]
-    if args.config is not None:
-        cmd += ["--config", args.config]
     if args.base_url is not None:
         cmd += ["--base-url", args.base_url]
     if args.api_key is not None:

@@ -19,13 +19,14 @@ full answer amongst the option to question…"), kept as-is for faithfulness eve
 Loong is free-form.
 
 DEVIATIONS (vs upstream, ledgered in PROVENANCE.md):
-  • Transport: ``litellm.completion`` (+ ``num_retries`` transport retries, ``--seed``,
-    ``--config`` sampling) instead of a raw ``openai`` client + tenacity.
+  • Transport: ``litellm.completion`` (+ ``num_retries`` transport retries, ``--seed``)
+    instead of a raw ``openai`` client + tenacity.
   • ``max_tokens`` (D10/D12 — run RAPTOR on a reasoning model): the summary's ~N-token length
     control is a PROMPT hint, and the summarize call sends **no max_tokens** (v4) so reasoning has the
     full window; empty (runaway) summaries are retried. The QA call also sends NONE (uncapped),
-    exactly like upstream. No ``--config`` needed (thinking is the served default).
-  • QA ``temperature=0`` is kept (upstream pins it); a ``--config`` preset can override.
+    exactly like upstream. Runs use the served model's own sampling.
+  • QA ``temperature=0`` is kept: upstream pins it in ``QAModels.py`` (three places) while
+    its SUMMARIZER passes no temperature at all — the seam mirrors both halves of that split.
   • Usage is accumulated DETERMINISTICALLY (``usage_envelope`` per call, like
     structrag/arag) — the build fires many SYNC calls, which the
     litellm-callback ``usage_scope`` path under-counts. Thread-safe: RAPTOR builds the
@@ -83,7 +84,7 @@ class _LiteLLMSeam:
             "model": self._litellm_kwargs["model"],
             "messages": messages,
             "num_retries": _NUM_RETRIES,
-            **self._completion_params,   # --config sampling preset (caller kwargs win below)
+            **self._completion_params,   # run-config generation params (caller kwargs win below)
             **call_kwargs,               # role-specific (max_tokens / temperature)
         }
         if self._litellm_kwargs.get("api_base") is not None:
@@ -185,7 +186,7 @@ class RaptorQAModel(_LiteLLMSeam, BaseQAModel):
              "content": f"Given Context: {context} Give the best full answer amongst the option to question {question}"},
         ]
         # Upstream sends NO max_tokens; default None → omit it. temperature defaults to 0 (upstream);
-        # a --config preset in _completion_params overrides.
+        # a temperature in _completion_params would override it.
         kwargs: dict[str, Any] = {}
         if max_tokens is not None:
             kwargs["max_tokens"] = max_tokens

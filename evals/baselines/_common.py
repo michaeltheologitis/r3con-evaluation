@@ -152,7 +152,7 @@ def scan_completed_task_ids(base: Path, run_config: dict[str, Any]) -> set[str]:
     "Finished" = a ``manifest.json`` (succeeded) OR ``error.json`` (failed, recorded) —
     a recorded failure is NOT retried (delete its folder to retry), same policy as the
     content-addressed scan. Config-scoping (canonical-JSON equality) is what keeps a
-    different experiment — another model / seed / ``--config`` / ``run_version`` or any
+    different experiment — another model / seed / ``run_version`` or any
     other baseline-specific knob — from counting as "done": those rebuild from scratch.
     This restores resumption WITHOUT restoring index reuse (a pending task still builds
     its own fresh index inside its own folder).

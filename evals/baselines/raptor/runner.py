@@ -37,7 +37,6 @@ from evals.baselines.raptor.run import (
     build_one, embed_one, load_embed, run_one, save_embed,
 )
 from evals.llm.usage import usage_scope
-from evals.model_sampling import MODEL_SAMPLING_CONFIG
 from evals.settings import DEFAULT_COMPLETION_MODEL, DEFAULT_EMBEDDING_MODEL
 
 BASELINE = "raptor"
@@ -53,8 +52,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--benchmark", required=True, choices=sorted(SUPPORTED_BENCHMARKS))
     p.add_argument("--model", type=str, default=DEFAULT_COMPLETION_MODEL,
                    help="The LLM for BOTH the cluster summaries (tree build) and the QA answer.")
-    p.add_argument("--config", type=str, default=None, choices=sorted(MODEL_SAMPLING_CONFIG),
-                   help="Named sampling preset (applies to every completion). Recorded in the manifest config.")
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--paper-hparams", action="store_true",
                    help="Use RAPTOR's PUBLISHED tree hyperparameters (chunk 100 / recluster 3500 / "
@@ -113,9 +110,6 @@ def build_run_config(args: argparse.Namespace) -> dict:
         "embedding_model": args.embedding_model,
         "run_version": _RUN_VERSION,
     }
-    if args.config is not None:
-        config["config_name"] = args.config
-        config["completion_params"] = MODEL_SAMPLING_CONFIG[args.config]
     # Only add the key when set → config stays byte-identical (same hash) for existing D12 runs.
     if args.paper_hparams:
         config["paper_hparams"] = True
@@ -143,8 +137,6 @@ def build_child_cmd(args: argparse.Namespace, task_id: str, run_tag: str) -> lis
         cmd += ["--embed-workers", str(args.embed_workers)]
     if args.summary_workers is not None:
         cmd += ["--summary-workers", str(args.summary_workers)]
-    if args.config is not None:
-        cmd += ["--config", args.config]
     if args.paper_hparams:
         cmd += ["--paper-hparams"]
     if args.base_url is not None:

@@ -7,7 +7,7 @@ by default (``--max-workers 1`` — a deliberate choice for this baseline; bump 
 your Max rate limits can take it). Each task shells out to ``claude -p`` (see ``run.py``); auth is
 the logged-in Max subscription (the env's ``ANTHROPIC_API_KEY`` is popped for the CLI).
 
-There is no ``--seed`` / ``--config`` (the CLI takes neither) and no ``--base-url`` / ``--api-key``
+There is no ``--seed`` (the CLI takes none) and no ``--base-url`` / ``--api-key``
 (the CLI owns auth). The behavioural knobs are ``--model`` + ``--effort``.
 """
 from __future__ import annotations

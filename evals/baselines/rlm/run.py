@@ -89,9 +89,9 @@ def _backend_kwargs(litellm_kwargs: dict[str, Any], run_config: dict[str, Any]) 
     """RLM's OpenAI-compatible client config for the vLLM endpoint.
 
     We inject ``seed`` (the run's ``--seed``, **default 42** when not given) into the generation call
-    for reproducibility — the harness convention every baseline follows — plus any opt-in ``--config``
-    sampling preset (``completion_params``). RLM is otherwise left at its own defaults (no temperature
-    pin, no max_tokens cap)."""
+    for reproducibility — the harness convention every baseline follows — plus any
+    ``completion_params`` the run config carries (none are set today). RLM is otherwise left at
+    its own defaults (no temperature pin, no max_tokens cap)."""
     kw: dict[str, Any] = {
         "model_name": _strip_provider(litellm_kwargs["model"]),
         "base_url": litellm_kwargs.get("api_base"),
@@ -135,7 +135,7 @@ def run_one(
     task = _build_task(benchmark, task_id)
 
     # vLLM via RLM's OpenAI-compatible client. NO OpenAI cloud, NO litellm. We inject `seed`
-    # (default 42) for reproducibility + any --config preset; RLM is otherwise at its own defaults.
+    # (default 42) for reproducibility; RLM is otherwise at its own defaults.
     backend_kwargs = _backend_kwargs(litellm_kwargs, run_config)
 
     # RLM's native trajectory jsonl, in the run folder — minus the REPL-variable snapshots (logger.py).

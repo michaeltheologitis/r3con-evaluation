@@ -6,8 +6,8 @@ REPLACES upstream's ``LLMClient`` (raw ``requests.post`` to ``{base_url}/chat/co
 consumes — ``chat(messages, tools=…, temperature=…, max_tokens=…) -> {"message": <OpenAI
 dict>, "cost", "input_tokens", "output_tokens", "raw_response"}`` — so the vendored ReAct
 loop / tools / prompts run UNMODIFIED, but calls route through ``litellm.completion``
-(vLLM / OpenAI / Ollama, with provider routing, ``--seed``, ``--config`` sampling, and
-``num_retries`` transport retries).
+(vLLM / OpenAI / Ollama, with provider routing, ``--seed``, and ``num_retries``
+transport retries).
 
 This re-seam is a sanctioned deviation: it changes the TRANSPORT, not A-RAG's method
 (the agent still decides every tool call and when to answer). ``cost`` is best-effort
@@ -87,8 +87,9 @@ class AragLLM:
             "messages": messages,
             "max_tokens": max_tokens or self._max_tokens,
             "num_retries": _NUM_RETRIES,
-            # --config sampling preset (temperature / top_p / extra_body / …). A
-            # caller-supplied `temperature` (the force-answer call passes 0.0) wins below.
+            # Any generation params the run config carries (none today — runs use the
+            # served model's own sampling). A caller-supplied `temperature` (the
+            # force-answer call passes 0.0) wins below.
             **self._completion_params,
         }
         if temperature is not None:

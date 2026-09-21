@@ -77,10 +77,11 @@ python -m evals.baselines.rlm --benchmark loong \
   --model Qwen/Qwen3.5-35B-A3B --base-url http://localhost:8555/v1 --api-key <key>
 ```
 
-Shared flags: `--limit N` (run the next N pending tasks), `--seed`, `--config`
-(a named sampling preset), `--max-workers`. Each task runs in its own child
-process exactly once — no retries — and ends with either a `manifest.json` or an
-`error.json`, so a re-run only does what is missing.
+Shared flags: `--limit N` (run the next N pending tasks), `--seed`,
+`--max-workers`. Every run uses the served model's own default sampling. Each
+task runs in its own child process exactly once — no retries — and ends with
+either a `manifest.json` or an `error.json`, so a re-run only does what is
+missing.
 
 `arag` needs a tool-calling endpoint (`--enable-auto-tool-choice
 --tool-call-parser hermes` on vLLM); `claude-code` shells out to the `claude` CLI

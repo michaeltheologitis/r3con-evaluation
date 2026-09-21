@@ -10,7 +10,7 @@ folder, no shared ``_indices/`` store, and no content-addressing; a pending task
 builds its gist memory from scratch inside its own folder (no gist memory is ever reused).
 
 It DOES resume, though: the parent scans existing run folders and **skips tasks already
-completed for this exact config** (model / seed / ``--config`` / ``run_version`` — matched
+completed for this exact config** (model / seed / ``run_version`` — matched
 against each record's saved ``config``), so a re-run only does what's missing — it does NOT
 re-run finished experiments. ``--limit N`` runs the next N PENDING tasks. To force a full
 re-run, delete the baseline dir (or the specific run folders).
@@ -34,7 +34,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from evals.baselines import _common
 from evals.baselines.readagent.run import SUPPORTED_BENCHMARKS, run_one, run_version_for
 from evals.llm.usage import usage_scope
-from evals.model_sampling import MODEL_SAMPLING_CONFIG
 from evals.settings import DEFAULT_COMPLETION_MODEL
 
 BASELINE = "readagent"
@@ -51,8 +50,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--model", type=str, default=DEFAULT_COMPLETION_MODEL,
                    help="The LLM for every stage (pagination, gisting, look-up, answer). "
                         "ReadAgent uses no embeddings.")
-    p.add_argument("--config", type=str, default=None, choices=sorted(MODEL_SAMPLING_CONFIG),
-                   help="Named sampling preset (applies to every completion). Recorded in the manifest config.")
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--base-url", type=str, default=None)
     p.add_argument("--api-key", type=str, default=None)
@@ -80,9 +77,6 @@ def build_run_config(args: argparse.Namespace) -> dict:
         "seed": args.seed,
         "run_version": run_version_for(args.benchmark),  # per-benchmark: loong/dracula "v2", corpusqa "v4"
     }
-    if args.config is not None:
-        config["config_name"] = args.config
-        config["completion_params"] = MODEL_SAMPLING_CONFIG[args.config]
     return config
 
 
@@ -106,8 +100,6 @@ def build_child_cmd(args: argparse.Namespace, task_id: str, run_tag: str) -> lis
            "--model", args.model, "--seed", str(args.seed),
            "--gist-workers", str(args.gist_workers),
            "--task-id", task_id, "--run-tag", run_tag]
-    if args.config is not None:
-        cmd += ["--config", args.config]
     if args.base_url is not None:
         cmd += ["--base-url", args.base_url]
     if args.api_key is not None:

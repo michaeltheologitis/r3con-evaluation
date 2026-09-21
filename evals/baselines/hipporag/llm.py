@@ -22,7 +22,7 @@ Deviations from ``CacheOpenAI`` (ledgered in PROVENANCE.md):
     chunk size.
   * D6 NO sqlite response cache: the harness owns resumption (one run folder per task),
     so upstream's ``@cache_response`` is dropped — every call is a real call.
-  * ``--seed`` + a ``--config`` sampling preset are threaded onto every call.
+  * ``--seed`` is threaded onto every call.
 """
 from __future__ import annotations
 
@@ -73,7 +73,7 @@ class HippoRAGLLM:
         ``kwargs`` may carry upstream's ``model`` / ``max_completion_tokens`` /
         ``max_tokens`` / ``n`` / ``temperature`` / ``seed`` — we IGNORE the cap keys
         (D5) and honor the rest only when they don't conflict with the run's own
-        seed / sampling preset.
+        seed.
         """
         request: dict[str, Any] = {
             "model": self._model,
@@ -86,11 +86,11 @@ class HippoRAGLLM:
             request["api_key"] = self._litellm_kwargs["api_key"]
         if self._seed is not None:
             request["seed"] = self._seed
-        # A --config sampling preset (temperature / top_p / extra_body …) applies to
-        # every internal call, indexing and query alike.
+        # Any generation params the run config carries apply to every internal call,
+        # indexing and query alike (none are set today — the served defaults stand).
         request.update(self._completion_params)
         # Honor an upstream-requested temperature/n ONLY if the run didn't pin its own
-        # via --config (so faithful defaults survive without letting the 512-cap etc.
+        # in ``completion_params`` (so faithful defaults survive without letting the 512-cap etc.
         # leak back in). The cap keys are intentionally dropped (D5).
         for k in ("temperature", "n"):
             if k in kwargs and k not in request:

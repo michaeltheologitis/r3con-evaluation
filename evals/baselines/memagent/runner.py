@@ -12,8 +12,8 @@ pending task always rebuilds from scratch. Nothing here grades — the raw answe
 as-is for the external scoring repo that reads these logs.
 
 It DOES resume: the parent scans existing run folders and **skips tasks already completed
-for this exact config** (model / seed / chunk_size / max_new / max_context_len / --config
-/ run_version) — so a re-run only does what's missing. ``--limit N`` runs the next N
+for this exact config** (model / seed / chunk_size / max_new / max_context_len /
+run_version) — so a re-run only does what's missing. ``--limit N`` runs the next N
 PENDING. To force a full re-run, delete the baseline dir.
 
 MemAgent's model IS the RL-trained checkpoint (default ``BytedTsinghua-SIA/RL-MemoryAgent-14B``,
@@ -31,7 +31,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from evals.baselines import _common
 from evals.baselines.memagent.run import SUPPORTED_BENCHMARKS, _RUN_VERSION, run_one
 from evals.llm.usage import usage_scope
-from evals.model_sampling import MODEL_SAMPLING_CONFIG
 
 BASELINE = "memagent"
 MODULE = "evals.baselines.memagent"
@@ -57,8 +56,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--model", type=str, default=DEFAULT_MODEL,
                    help=f"The RL-trained MemAgent model (default: {DEFAULT_MODEL}), served on "
                         "vLLM. Its tokenizer drives the token-window chunker.")
-    p.add_argument("--config", type=str, default=None, choices=sorted(MODEL_SAMPLING_CONFIG),
-                   help="Named sampling preset (applies to every completion). Recorded in the config.")
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--base-url", type=str, default=None,
                    help="vLLM endpoint for the RL model (REQUIRED for the default model).")
@@ -97,9 +94,6 @@ def build_run_config(args: argparse.Namespace) -> dict:
         "max_context_len": args.max_context_len,
         "run_version": _RUN_VERSION,
     }
-    if args.config is not None:
-        config["config_name"] = args.config
-        config["completion_params"] = MODEL_SAMPLING_CONFIG[args.config]
     return config
 
 
@@ -120,8 +114,6 @@ def build_child_cmd(args: argparse.Namespace, task_id: str, run_tag: str) -> lis
            "--chunk-size", str(args.chunk_size), "--max-new", str(args.max_new),
            "--max-context-len", str(args.max_context_len),
            "--task-id", task_id, "--run-tag", run_tag]
-    if args.config is not None:
-        cmd += ["--config", args.config]
     if args.base_url is not None:
         cmd += ["--base-url", args.base_url]
     if args.api_key is not None:

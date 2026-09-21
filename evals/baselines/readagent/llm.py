@@ -4,8 +4,7 @@ REPLACES upstream's ``query_gpt_model`` / ``query_gemini_model`` (raw ``openai``
 ``google.generativeai`` clients, one user message, ``temperature=0.0``,
 ``max_tokens=512``) with the SAME shape — one single-user-message completion returning
 text — but routed through the harness's LiteLLM wrapper (vLLM / OpenAI / Ollama, with
-provider routing, ``--seed``, ``--config`` sampling, and ``num_retries`` transport
-retries). Every ReadAgent stage (pagination, gisting, look-up, answer) calls
+provider routing, ``--seed``, and ``num_retries`` transport retries). Every ReadAgent stage (pagination, gisting, look-up, answer) calls
 ``complete(prompt)``.
 
 Deviations from upstream (also in PROVENANCE.md):
@@ -18,8 +17,8 @@ Deviations from upstream (also in PROVENANCE.md):
     ``ContextWindowExceededError``, which the runner records as a genuine model failure
     (an ``error.json``) — faithful to ReadAgent, which does not truncate.
   • Temperature is NOT pinned to upstream's 0.0 — it follows the served model/provider
-    default unless a ``--config`` preset overrides it (the harness convention shared by
-    structrag/arag, so the method is measured "as served").
+    default (the harness convention shared by structrag/arag, so the method is measured
+    "as served").
 
 Usage is captured DETERMINISTICALLY (``usage_envelope`` per call → ``{total, calls}``)
 since ReadAgent fires many SYNC completions (the litellm-callback ``usage_scope`` path

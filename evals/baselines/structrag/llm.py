@@ -26,8 +26,8 @@ produced), and an IMPROVEMENT over upstream's hardcoded implementation:
     prompt leaves, so we don't pre-reserve it.
 
 Other differences: transport via ``litellm_chat_completion_full`` (litellm ``num_retries``
-for transient errors) not raw ``requests.post``; seed from ``--seed`` not 1024; ``--config``
-sampling on every call; usage → harness ``{total, calls}`` shape.
+for transient errors) not raw ``requests.post``; seed from ``--seed`` not 1024; usage →
+harness ``{total, calls}`` shape.
 
 Full deviation ledger: evals/baselines/structrag/PROVENANCE.md
 """

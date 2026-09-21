@@ -3,7 +3,7 @@
 REPLACES upstream ``quickstart.py``'s raw ``aiohttp`` POST to an OpenAI-compatible
 endpoint with the SAME shape — one single-user-message completion returning text — but
 routed through the harness's LiteLLM wrapper (vLLM / OpenAI, with provider routing,
-``--seed``, ``--config`` sampling, and ``num_retries`` transport retries). Both call
+``--seed`` and ``num_retries`` transport retries). Both call
 types (every per-chunk memory update AND the final answer) go through ``complete``.
 
 Deviations from upstream (also in PROVENANCE.md):
@@ -13,8 +13,8 @@ Deviations from upstream (also in PROVENANCE.md):
     point (fixed-window, linear processing). MemAgent's model is Qwen2.5-Instruct
     (non-thinking), so 1024 is not eaten by reasoning tokens.
   • Temperature is NOT pinned to upstream's 0.7 — it follows the served model/provider
-    default unless a ``--config`` preset overrides it (the harness convention shared by
-    readagent / structrag / arag, so the method is measured "as served").
+    default (the harness convention shared by readagent / structrag / arag, so the
+    method is measured "as served").
 
 Usage is captured DETERMINISTICALLY (``usage_envelope`` per call → ``{total, calls}``)
 since MemAgent fires many SYNC completions (the litellm-callback ``usage_scope`` path

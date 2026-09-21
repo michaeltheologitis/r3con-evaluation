@@ -12,7 +12,7 @@ SIMPLE NO-REUSE logging (the readagent/rlm layout): each task run gets its OWN f
 written live), ``manifest.json`` (TOTAL tokens) and ``calls.json``. Grading happens outside this
 repo. No ``inferences/``, no shared index. It DOES resume — the parent scans run folders
 and skips tasks already completed for this exact config (model / seed / max_iterations / max_depth /
-``--config`` / run_version). ``--limit N`` runs the next N PENDING tasks.
+run_version). ``--limit N`` runs the next N PENDING tasks.
 
 Each task runs in a child subprocess ONCE (crash isolation; also isolates the in-process REPL ``exec``
 to that child); a caught error → ``error.json``, a hard crash → the parent writes ``error.json``.
@@ -28,7 +28,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from evals.baselines import _common
 from evals.baselines.rlm.run import SUPPORTED_BENCHMARKS, _RUN_VERSION, run_one
 from evals.llm.usage import usage_scope
-from evals.model_sampling import MODEL_SAMPLING_CONFIG
 
 BASELINE = "rlm"
 MODULE = "evals.baselines.rlm"
@@ -50,8 +49,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
                    help="REQUIRED: the vLLM OpenAI-compatible endpoint (e.g. http://localhost:8555/v1). "
                         "An OpenAI endpoint is rejected — RLM is token-heavy and must run on local vLLM.")
     p.add_argument("--api-key", type=str, default=None)
-    p.add_argument("--config", type=str, default=None, choices=sorted(MODEL_SAMPLING_CONFIG),
-                   help="Named sampling preset (applies to every completion). Recorded in the manifest config.")
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--max-iterations", type=int, default=30,
                    help="Max root-agent REPL turns (RLM default 30).")
@@ -92,9 +89,6 @@ def build_run_config(args: argparse.Namespace) -> dict:
         "max_timeout": args.max_timeout,
         "run_version": _RUN_VERSION,
     }
-    if args.config is not None:
-        config["config_name"] = args.config
-        config["completion_params"] = MODEL_SAMPLING_CONFIG[args.config]
     return config
 
 
@@ -118,8 +112,6 @@ def build_child_cmd(args: argparse.Namespace, task_id: str, run_tag: str) -> lis
            "--task-id", task_id, "--run-tag", run_tag]
     if args.max_timeout is not None:
         cmd += ["--max-timeout", str(args.max_timeout)]
-    if args.config is not None:
-        cmd += ["--config", args.config]
     if args.api_key is not None:
         cmd += ["--api-key", args.api_key]
     return cmd

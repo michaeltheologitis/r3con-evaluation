@@ -28,7 +28,6 @@ from evals.baselines import _common
 from evals.baselines.arag.chunker import CHUNKER_VERSION
 from evals.baselines.arag.run import SUPPORTED_BENCHMARKS, _INDEX_VERSION, run_one
 from evals.llm.usage import usage_scope
-from evals.model_sampling import MODEL_SAMPLING_CONFIG
 from evals.settings import DEFAULT_COMPLETION_MODEL, DEFAULT_EMBEDDING_MODEL
 
 BASELINE = "arag"
@@ -43,11 +42,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--benchmark", required=True, choices=sorted(SUPPORTED_BENCHMARKS),
                    help="Which benchmark to run (A-RAG supports these).")
     p.add_argument("--model", type=str, default=DEFAULT_COMPLETION_MODEL)
-    p.add_argument("--config", type=str, default=None, choices=sorted(MODEL_SAMPLING_CONFIG),
-                   help="Named sampling preset from evals.model_sampling.MODEL_SAMPLING_CONFIG "
-                        "(temperature / top_p / extra_body / …). Applied to EVERY agent "
-                        "completion call. Folded into the run identity (hashed + recorded). "
-                        "Omit for model/provider defaults.")
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--base-url", type=str, default=None)
     p.add_argument("--api-key", type=str, default=None)
@@ -75,9 +69,6 @@ def build_run_config(args: argparse.Namespace) -> dict:
         "index_version": _INDEX_VERSION,
         "chunker_version": CHUNKER_VERSION,
     }
-    if args.config is not None:
-        config["config_name"] = args.config
-        config["completion_params"] = MODEL_SAMPLING_CONFIG[args.config]
     return config
 
 
@@ -93,8 +84,6 @@ def build_child_cmd(args: argparse.Namespace, task_id: str) -> list[str]:
            "--model", args.model, "--seed", str(args.seed),
            "--embedding-model", args.embedding_model,
            "--task-id", task_id]
-    if args.config is not None:
-        cmd += ["--config", args.config]
     if args.base_url is not None:
         cmd += ["--base-url", args.base_url]
     if args.api_key is not None:

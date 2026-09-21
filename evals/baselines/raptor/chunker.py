@@ -13,7 +13,7 @@ text exceeds ``max_length_in_cluster`` = 3500 tokens (``cluster_utils``), and it
 base-case stops only at ONE node. With oversized leaves a cluster of just **2–4** of them
 exceeds 3500 → RAPTOR recurses on a tiny set → ``global_cluster_embeddings`` sets
 ``n_neighbors = int(√(len−1)) ≤ 1`` → UMAP raises ``ValueError: n_neighbors must be greater
-than 1``. Live on the Qwen3.5-MoE-Instruct (non-thinking) run this crashed ~50% of Loong ZH
+than 1``. Observed live on a non-thinking run, this crashed ~50% of Loong ZH
 ``legal`` tasks (and the whole ZH half is at risk) — NOT the documented thinking-model
 problem, a separate English-centric-chunker clash.
 

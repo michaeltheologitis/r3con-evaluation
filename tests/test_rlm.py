@@ -66,7 +66,7 @@ def test_backend_kwargs_injects_seed_and_config() -> None:
     assert kw["sampling_args"] == {"seed": 42}
     # seed defaults to 42 when run_config doesn't carry one.
     assert rlm_run._backend_kwargs(lk, {})["sampling_args"]["seed"] == 42
-    # --config preset merges with the seed.
+    # run-config completion_params merge with the seed.
     kw2 = rlm_run._backend_kwargs(lk, {"seed": 7, "completion_params": {"temperature": 0.7}})
     assert kw2["sampling_args"] == {"temperature": 0.7, "seed": 7}
 

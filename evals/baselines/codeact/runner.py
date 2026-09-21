@@ -9,7 +9,7 @@ folder ``logs/{benchmark}/codeact/{run_tag}/`` with EVERYTHING inside it — the
 either: this runner only records what the agent produced, for the separate scoring repo to read.
 
 It DOES resume: the parent scans existing run folders and **skips tasks already completed for this
-exact config** (model / seed / ``--config`` / ``max_steps`` / ``run_version`` — matched against each
+exact config** (model / seed / ``max_steps`` / ``run_version`` — matched against each
 record's saved ``config``), so a re-run only does what's missing. ``--limit N`` runs the next N
 PENDING tasks. To force a full re-run, delete the baseline dir (or specific run folders).
 
@@ -34,7 +34,6 @@ from evals.baselines.codeact.run import (
     run_one,
 )
 from evals.llm.usage import usage_scope
-from evals.model_sampling import MODEL_SAMPLING_CONFIG
 from evals.settings import DEFAULT_COMPLETION_MODEL
 
 BASELINE = "codeact"
@@ -52,8 +51,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--model", type=str, default=DEFAULT_COMPLETION_MODEL,
                    help="The LLM the CodeAgent drives (routed via litellm — OpenAI by default; "
                         "pass --base-url for vLLM). CodeAct uses no embeddings.")
-    p.add_argument("--config", type=str, default=None, choices=sorted(MODEL_SAMPLING_CONFIG),
-                   help="Named sampling preset (applies to every completion). Recorded in the manifest config.")
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--base-url", type=str, default=None)
     p.add_argument("--api-key", type=str, default=None)
@@ -79,9 +76,6 @@ def build_run_config(args: argparse.Namespace) -> dict:
         "max_steps": args.max_steps,
         "run_version": _RUN_VERSION,
     }
-    if args.config is not None:
-        config["config_name"] = args.config
-        config["completion_params"] = MODEL_SAMPLING_CONFIG[args.config]
     return config
 
 
@@ -101,8 +95,6 @@ def build_child_cmd(args: argparse.Namespace, task_id: str, run_tag: str) -> lis
            "--model", args.model, "--seed", str(args.seed),
            "--max-steps", str(args.max_steps),
            "--task-id", task_id, "--run-tag", run_tag]
-    if args.config is not None:
-        cmd += ["--config", args.config]
     if args.base_url is not None:
         cmd += ["--base-url", args.base_url]
     if args.api_key is not None:

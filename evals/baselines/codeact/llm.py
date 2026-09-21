@@ -14,8 +14,7 @@ we read ``response.usage`` per call (exact, never dropped) and accumulate the ha
 
 The model is otherwise **unchanged** — same litellm transport, so ``--model`` / ``--base-url`` /
 ``--api-key`` and the project's provider prefixes behave identically to every other litellm-routed
-baseline; ``seed`` + a ``--config`` sampling preset are injected as model kwargs (applied to every
-completion, ``run.py``). The usage shape is byte-identical to ``usage_envelope`` / the callback (same
+baseline; ``seed`` is injected as a model kwarg (applied to every completion, ``run.py``). The usage shape is byte-identical to ``usage_envelope`` / the callback (same
 ``_usage_to_dict`` + ``_merge_numeric`` helpers), so the manifest and any reader of it consume it
 unchanged. See ``PROVENANCE.md``.
 """

@@ -134,7 +134,7 @@ def test_qa_config_temperature_overrides_default_zero(monkeypatch) -> None:
     _patch(monkeypatch, capture=cap)
     qa = RaptorQAModel(_KW, completion_params={"temperature": 0.9})
     qa.answer_question("c", "q")
-    assert cap[0]["temperature"] == 0.9  # --config preset wins; we don't force 0
+    assert cap[0]["temperature"] == 0.9  # explicit completion_params win; we don't force 0
 
 
 def test_embedding_seam_replaces_newlines_returns_vector_and_records(monkeypatch) -> None:
@@ -490,7 +490,7 @@ def test_embed_one_handles_special_token_docs(tmp_path, monkeypatch) -> None:
 
 
 def _args(**over):
-    base = dict(benchmark="loong", model="openai/gpt-5.4-nano", config=None, seed=42,
+    base = dict(benchmark="loong", model="openai/gpt-5.4-nano", seed=42,
                 base_url=None, api_key=None, embedding_model="openai/text-embedding-3-small",
                 phase="all", embed_workers=None, summary_workers=None, max_workers=8,
                 paper_hparams=False, limit=None, task_id=None, run_tag=None)
@@ -503,13 +503,6 @@ def test_build_run_config_identity() -> None:
     assert cfg == {"benchmark": "loong", "baseline": "raptor", "model": "gpt-5-4-nano",
                    "seed": 42, "embedding_model": "openai/text-embedding-3-small", "run_version": "v4"}
     assert "config_name" not in cfg and "completion_params" not in cfg
-
-
-def test_build_run_config_with_sampling_preset() -> None:
-    from evals.model_sampling import MODEL_SAMPLING_CONFIG
-    name = sorted(MODEL_SAMPLING_CONFIG)[0]
-    cfg = build_run_config(_args(config=name))
-    assert cfg["config_name"] == name and cfg["completion_params"] == MODEL_SAMPLING_CONFIG[name]
 
 
 def test_paper_hparams_flag_selects_values_and_folds_into_config() -> None:

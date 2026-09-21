@@ -29,7 +29,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from evals.baselines import _common
 from evals.baselines.structrag.run import SUPPORTED_BENCHMARKS, run_one
 from evals.llm.usage import usage_scope
-from evals.model_sampling import MODEL_SAMPLING_CONFIG
 from evals.settings import DEFAULT_COMPLETION_MODEL
 
 BASELINE = "structrag"
@@ -44,11 +43,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--benchmark", required=True, choices=sorted(SUPPORTED_BENCHMARKS),
                    help="Which benchmark to run (StructRAG supports these).")
     p.add_argument("--model", type=str, default=DEFAULT_COMPLETION_MODEL)
-    p.add_argument("--config", type=str, default=None, choices=sorted(MODEL_SAMPLING_CONFIG),
-                   help="Named sampling preset from evals.model_sampling.MODEL_SAMPLING_CONFIG "
-                        "(temperature / top_p / extra_body / …). Applied to EVERY StructRAG "
-                        "completion call. Folded into the run identity (hashed + recorded in the "
-                        "manifest). Omit for model/provider defaults.")
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--base-url", type=str, default=None)
     p.add_argument("--api-key", type=str, default=None)
@@ -63,21 +57,13 @@ def build_arg_parser() -> argparse.ArgumentParser:
 def build_run_config(args: argparse.Namespace) -> dict:
     """The inference identity (what gets hashed). No retrieval/index knobs for
     structrag — just benchmark / baseline / model / seed.
-
-    A ``--config`` preset folds BOTH its resolved ``completion_params`` (so the hash
-    reflects exactly what was sent) AND its ``config_name`` (a readable label) into
-    the identity. Without ``--config`` the shape is unchanged.
     """
-    config = {
+    return {
         "benchmark": args.benchmark,
         "baseline": BASELINE,
         "model": _common.canonical_model_id(args.model),
         "seed": args.seed,
     }
-    if args.config is not None:
-        config["config_name"] = args.config
-        config["completion_params"] = MODEL_SAMPLING_CONFIG[args.config]
-    return config
 
 
 def _litellm_kwargs(args: argparse.Namespace) -> dict:
@@ -91,8 +77,6 @@ def build_child_cmd(args: argparse.Namespace, task_id: str) -> list[str]:
            "--benchmark", args.benchmark,
            "--model", args.model, "--seed", str(args.seed),
            "--task-id", task_id]
-    if args.config is not None:
-        cmd += ["--config", args.config]
     if args.base_url is not None:
         cmd += ["--base-url", args.base_url]
     if args.api_key is not None:

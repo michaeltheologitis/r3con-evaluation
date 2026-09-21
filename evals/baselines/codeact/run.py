@@ -90,9 +90,9 @@ def _docs_note(n_docs: int) -> str:
 def _model_call_kwargs(run_config: dict[str, Any]) -> dict[str, Any]:
     """Generation kwargs applied to EVERY completion (smolagents merges model kwargs last, so they
     override per call): the run's ``seed`` (default 42 — the harness reproducibility convention
-    every baseline follows) plus any ``--config`` sampling preset (``completion_params``: top-level
-    ``temperature``/``top_p``/… and vLLM ``extra_body``, forwarded straight to litellm). Without
-    ``--config`` only ``seed`` is sent (model/provider defaults otherwise)."""
+    every baseline follows), plus any ``completion_params`` the run config carries. Nothing sets
+    those today, so in practice only ``seed`` is sent and generation follows the served
+    model/provider defaults."""
     kw: dict[str, Any] = dict(run_config.get("completion_params") or {})
     kw.setdefault("seed", run_config.get("seed", 42))
     return kw
@@ -120,7 +120,7 @@ def run_one(
 
     # smolagents' LiteLLMModel, subclassed for complete deterministic cost capture. Same litellm
     # transport as every other baseline (so --model/--base-url/--api-key + provider prefixes work
-    # identically); seed + --config sampling are model kwargs applied to every completion.
+    # identically); seed is a model kwarg applied to every completion.
     model = CodeActModel(
         model_id=litellm_kwargs["model"],
         api_base=litellm_kwargs.get("api_base"),

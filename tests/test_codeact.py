@@ -243,15 +243,8 @@ def test_build_run_config_shape() -> None:
     assert cfg["benchmark"] == "corpusqa" and cfg["baseline"] == "codeact"
     assert cfg["seed"] == 7 and cfg["max_steps"] == 12
     assert cfg["run_version"] == ca_run._RUN_VERSION
-    assert "completion_params" not in cfg          # no --config → no sampling params
-
-
-def test_build_run_config_with_sampling_preset() -> None:
-    p = ca_runner.build_arg_parser()
-    a = p.parse_args(["--benchmark", "loong", "--config", "Qwen3.5-MoE-Instruct",
-                      "--model", "hosted_vllm/Qwen/Qwen3.5-35B-A3B"])
-    cfg = ca_runner.build_run_config(a)
-    assert cfg["config_name"] == "Qwen3.5-MoE-Instruct" and "temperature" in cfg["completion_params"]
+    # Runs use the served model's own sampling; nothing pins generation params.
+    assert "completion_params" not in cfg and "config_name" not in cfg
 
 
 def test_runner_resumes_and_does_not_rerun_completed(tmp_path, monkeypatch) -> None:
