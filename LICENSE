@@ -24,6 +24,22 @@ SOFTWARE.
 
 This license covers the code written for this repository: the harness, the
 benchmark loaders and judges, the baseline connectors, the runners, the scripts
-and the tests. Third-party source vendored under `evals/baselines/*/upstream/`
-stays under its own authors' terms; each baseline's PROVENANCE.md records its
-upstream, the pinned commit and its license.
+and the tests. It does not cover third-party source redistributed here, which
+stays under its own authors' terms. That source lives in two places:
+
+- `evals/baselines/*/upstream/` — each baseline's vendored upstream. That
+  baseline's PROVENANCE.md records the source, the pinned commit and the
+  license, and where upstream ships a LICENSE file it is kept next to the code
+  (`hipporag/upstream/LICENSE`, `raptor/upstream/LICENSE.txt`).
+- `evals/r3con/pipeline/runtime/python_executor.py` — vendored from
+  huggingface/smolagents (Copyright 2024 The HuggingFace Inc. team), which is
+  outside `evals/baselines/` because `evals/r3con/` is the method under
+  evaluation rather than a baseline. Its own provenance and edits are recorded
+  in its file header.
+
+Two of those files are Apache-2.0 — the executor above and
+`evals/baselines/memagent/upstream/quickstart.py` (Copyright 2025 Bytedance Ltd.
+and/or its affiliates). Both keep their upstream Apache-2.0 headers, and a copy
+of the Apache License, Version 2.0 is included at `LICENSES/Apache-2.0.txt`.
+
+THIRD_PARTY.md is the repo-level inventory of everything vendored or depended on.
