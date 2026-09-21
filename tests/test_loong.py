@@ -270,7 +270,7 @@ def test_metadata_language_counts_match(ids) -> None:
 
 
 def test_get_documents_is_per_task_no_corpus() -> None:
-    """No get_corpus → graphrag treats Loong as per-task (per-instance bundles)."""
+    """No get_corpus → an indexing baseline indexes Loong per task (per-instance bundles)."""
     assert not hasattr(loong, "get_corpus")
 
 
@@ -576,8 +576,8 @@ def test_perfect_score_constant_is_100() -> None:
 
 
 def test_analysis_display_config_constants() -> None:
-    """The analysis-report display config the CLI reads via getattr: hide the
-    redundant breakdown axes (task_name duplicates task; length ≈ a finer set) and
+    """Report display config, read via getattr by whatever renders these axes: hide
+    the redundant breakdown axes (task_name duplicates task; length ≈ a finer set) and
     label the integer axes so a reader needn't know the 1–4 encoding."""
     assert loong.ANALYSIS_HIDE_AXES == frozenset({"task_name", "length"})
     labels = loong.ANALYSIS_VALUE_LABELS

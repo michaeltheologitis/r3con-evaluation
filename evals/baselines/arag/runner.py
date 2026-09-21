@@ -1,6 +1,6 @@
 """Runner for the A-RAG baseline.
 
-    python -m evals.baselines.arag --benchmark {longbenchv2,loong,corpusqa} [flags]
+    python -m evals.baselines.arag --benchmark {loong,corpusqa,dracula} [flags]
 
 Self-contained: this runner owns its argparse, run-config, parent fan-out, and
 child-mode (one task per subprocess, for crash isolation). It shares only the small
@@ -9,9 +9,9 @@ stateless mechanism in ``evals.baselines._common`` — there is no central runne
 This file is harness PLUMBING (not vendored A-RAG code); it mirrors
 ``structrag/runner.py`` (it writes a ``calls.json`` beside the manifest) with the
 addition of an ``--embedding-model`` flag and the index-version knobs in the run
-config (A-RAG builds a per-task content-addressed index, like arag). There is no
+config (A-RAG builds a per-task content-addressed index). There is no
 ``setup()`` (per-task indexing on demand in ``run_one``) and no ``--search-method``
-(A-RAG has a single agent loop, not graphrag's four modes).
+(A-RAG has a single agent loop, not a set of selectable retrieval modes).
 
 Failure policy (no infinite retries): each task runs in a child subprocess ONCE; a
 caught error → ``error.json``, a hard crash → parent writes ``error.json``. Either
@@ -65,7 +65,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
 def build_run_config(args: argparse.Namespace) -> dict:
     """The inference identity (what gets hashed). Carries the embedding model + the
     index/chunker versions (so a bump to either re-runs inferences, not just rebuilds
-    indices — same discipline as graphrag's ``index_version``)."""
+    indices)."""
     config = {
         "benchmark": args.benchmark,
         "baseline": BASELINE,

@@ -20,9 +20,10 @@ SIMPLE NO-REUSE logging (the readagent/rlm layout): each task run gets its OWN f
 ``logs/{benchmark}/rlm/{run_tag}/`` holding RLM's full trajectory — the native ``RLMLogger`` jsonl,
 written LIVE (one object per iteration, crash-resilient; REPL-variable snapshots dropped, see
 ``logger.py``) — ``manifest.json`` (TOTAL tokens across all
-depths/sub-calls), ``calls.json``, and (at score time) ``score.json``.
+depths/sub-calls) and ``calls.json``. Nothing here grades: the external scoring repo reads these
+log folders and persists its own grades.
 
-SUPPORTED_BENCHMARKS = {loong, corpusqa, longhealth, dracula}. Deviation ledger: evals/baselines/rlm/PROVENANCE.md
+SUPPORTED_BENCHMARKS = {loong, corpusqa, dracula}. Deviation ledger: evals/baselines/rlm/PROVENANCE.md
 """
 from __future__ import annotations
 
@@ -66,7 +67,7 @@ def _build_task(benchmark, task_id: str) -> str:
         instruction, question, _docs = benchmark.get_task(task_id)
         return f"{question}\n\n{instruction}"
     if name == "dracula":
-        # The bare question; the whole 45-document corpus goes into the REPL
+        # The bare question; the whole 46-document corpus goes into the REPL
         # `context` variable, dropped from the question.
         question, _docs = benchmark.get_task(task_id)
         return question

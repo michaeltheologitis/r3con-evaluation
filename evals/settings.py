@@ -5,37 +5,47 @@ from pathlib import Path
 
 
 # ----- Model registry -----
-# This is the single source of truth for every model choice in the project.
+# This is the project's central registry of DEFAULT model choices.
 # CLI flags (`--model`, `--embedding-model`) override per-invocation; the
-# values below are the defaults you get without any flag. If you find a
-# model hardcoded somewhere else in the codebase, fix that — central
-# registry preferred over ad-hoc constants scattered through files.
+# values below are the defaults you get without any flag. A few model
+# constants live outside this registry by design: a baseline that is
+# inseparable from its own model (memagent's RL checkpoint; claude_code,
+# which only runs Claude), the embeddings-always-OpenAI pin (hipporag), and
+# the r3con pipeline's own `configs/default.yaml`. Anything else hardcoded
+# elsewhere belongs here instead.
 
-# LLM used by each benchmark's parse() to map a model's free-form output onto a
-# valid answer choice (or "N/A"). Small + cheap; deterministic-ish.
+# The registry's small/cheap/deterministic-ish slot. NOTHING in this repo reads it
+# today: all three benchmarks here (loong / corpusqa / dracula) are free-form
+# generation graded by an LLM judge, so none of them needs a step that canonicalizes
+# a reply onto a fixed answer vocabulary. Kept as the registry's "small model"
+# default, and as the reference point JUDGE_MODEL is sized against.
 PARSE_MODEL = "openai/gpt-5.4-nano"
 
-# LLM used by the free-form-judge benchmarks (LooGLE / Loong / CorpusQA — their
-# score() / score_batch()) to grade a free-form answer against the gold answer.
-# Deliberately a notch larger than PARSE_MODEL: judging answer-equivalence /
-# rating is harder than canonicalizing a reply onto a fixed label vocabulary.
+# LLM used by each benchmark's judge (Loong / CorpusQA / Dracula — their
+# score() / score_details() / score_batch()) to grade a free-form answer against the
+# gold answer. Deliberately a notch larger than PARSE_MODEL: rating answer-equivalence
+# on free-form text is the harder job. Note that nothing in this repo INVOKES those
+# judges — the runners record only the model's raw output; grading happens in whatever
+# reads `logs/` afterwards.
 JUDGE_MODEL = "openai/gpt-5.4-mini"
 
-# Default completion model for baselines (`direct-llm`, `graphrag`'s completion
-# calls). Overridable per-invocation via `--model`. gpt-5.4-nano matches
-# PARSE_MODEL (the judge uses the slightly larger gpt-5.4-mini) — a cheap OpenAI
-# default lets the project work out-of-the-box from a `.env` with just
-# `OPENAI_API_KEY`. Cluster runs
-# typically pass `--model hosted_vllm/Qwen/Qwen3-32B` (or similar) to route
-# completions through a local vLLM endpoint instead.
+# Default completion model: what `--model` falls back to in the runners that carry no
+# default of their own (arag, codeact, hipporag, raptor, readagent, structrag). memagent
+# and claude_code default to their own model instead (still overridable via `--model`),
+# and rlm requires `--model`. gpt-5.4-nano matches PARSE_MODEL (the judge uses the
+# slightly larger gpt-5.4-mini) — a cheap OpenAI default lets the project work
+# out-of-the-box from a `.env` with just `OPENAI_API_KEY`. Cluster runs typically pass
+# `--model hosted_vllm/Qwen/Qwen3-32B` (or similar) to route completions through a
+# local vLLM endpoint instead.
 DEFAULT_COMPLETION_MODEL = "openai/gpt-5.4-nano"
 
-# Default embedding model for baselines that need embeddings (`graphrag`).
-# Overridable per-invocation via `--embedding-model`. text-embedding-3-small
-# is the cheapest production-grade OpenAI option (1536-dim, ~$0.02/1M tokens).
-# For fully self-hosted cluster runs, pass `--embedding-model hosted_vllm/<model>`
-# — but extend `evals.baselines.graphrag.config._EMBEDDING_DIM` first so
-# lancedb gets the right vector size.
+# Default embedding model for the baselines that embed: arag and raptor take it as the
+# `--embedding-model` default; hipporag pins the same OpenAI model in its own connector.
+# Per the project's embeddings-always-OpenAI rule, embeddings route to OpenAI by the
+# model's own provider (the `OPENAI_API_KEY` in the environment) independently of the
+# completion endpoint — so pointing `--model` at a local vLLM server does not move the
+# embeddings. text-embedding-3-small is the cheapest production-grade OpenAI option
+# (1536-dim, ~$0.02/1M tokens).
 DEFAULT_EMBEDDING_MODEL = "openai/text-embedding-3-small"
 
 # Fixed seed for the deterministic shuffle every benchmark's `get_task_ids`
@@ -60,9 +70,11 @@ def _slug(value: str) -> str:
 
 # LiteLLM provider prefixes, and the provider-agnostic canonical model id. These
 # live here in the model registry (not in `baselines/_common`) so ANY layer can
-# canonicalize a model id without an upward dependency — the benchmark scorers use
-# `canonical_model_id` for the grader slug they stamp on each score result, the
-# analysis scoreboard for `scored_with`, and the baselines for log-folder names.
+# canonicalize a model id without an upward dependency — the benchmark judges use
+# `canonical_model_id` for the grader slug they stamp on each score result, and the
+# baselines for the `model` they record in each `run_config`, which every manifest
+# carries — and which the content-addressed baselines (arag, structrag) also hash into
+# the log-folder name.
 # `baselines/_common` re-exports both for backward compatibility.
 LITELLM_PROVIDER_PREFIXES = ("hosted_vllm/", "ollama_chat/", "ollama/", "openai/")
 
@@ -89,8 +101,10 @@ def canonical_model_id(model: str) -> str:
 
 # Manual USD pricing for models LiteLLM doesn't price yet (e.g. a just-released model),
 # keyed by the **canonical model id** (`canonical_model_id`) → (input_$_per_token,
-# output_$_per_token). The analysis cost CLI falls back to this when `litellm.cost_per_token`
-# raises (`aggregate.cost_per_model_usd`), so a new model shows a real cost instead of "?".
+# output_$_per_token). NOTHING in this repo reads this dict — there is no cost, scoring or
+# reporting layer here. It is kept as the registry's price table for whatever reads
+# `logs/` afterwards. Such a reader uses it as the fallback when `litellm.cost_per_token`
+# raises on a model it does not price yet, so a new model shows a real cost instead of "?".
 # Add a model as a one-liner; drop it once LiteLLM ships the price.
 MANUAL_MODEL_PRICING: dict[str, tuple[float, float]] = {
     "claude-sonnet-5": (2e-6, 10e-6),   # $2 / 1M input tokens, $10 / 1M output tokens

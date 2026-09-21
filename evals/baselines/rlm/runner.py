@@ -1,6 +1,6 @@
 """Runner for the RLM (Recursive Language Models) baseline.
 
-    python -m evals.baselines.rlm --benchmark {loong,corpusqa} \
+    python -m evals.baselines.rlm --benchmark {loong,corpusqa,dracula} \
         --model Qwen/Qwen3.5-35B-A3B --base-url http://localhost:8555/v1 --api-key <key>
 
 RLM is **token-heavy by design** (a code-REPL agent that iterates + spawns recursive sub-LM
@@ -9,8 +9,8 @@ OpenAI endpoint is rejected. There is no default OpenAI model here (unlike the o
 
 SIMPLE NO-REUSE logging (the readagent/rlm layout): each task run gets its OWN folder
 ``logs/{benchmark}/rlm/{run_tag}/`` holding RLM's full trajectory (the native ``RLMLogger`` jsonl,
-written live), ``manifest.json`` (TOTAL tokens), ``calls.json``, and (at score time)
-``score.json``. No ``inferences/``, no shared index. It DOES resume — the parent scans run folders
+written live), ``manifest.json`` (TOTAL tokens) and ``calls.json``. Grading happens outside this
+repo. No ``inferences/``, no shared index. It DOES resume — the parent scans run folders
 and skips tasks already completed for this exact config (model / seed / max_iterations / max_depth /
 ``--config`` / run_version). ``--limit N`` runs the next N PENDING tasks.
 
@@ -79,7 +79,8 @@ def _validate_endpoint(args: argparse.Namespace) -> None:
 
 
 def build_run_config(args: argparse.Namespace) -> dict:
-    """The manifest ``config`` — the run identity the analysis CLI groups by + resumption keys on.
+    """The manifest ``config`` — the run identity these logs are grouped by downstream (by whatever
+    grades them later) + what resumption keys on.
     Endpoints/secrets (base_url, api_key) are NOT here — they ride in ``litellm_kwargs``."""
     config = {
         "benchmark": args.benchmark,

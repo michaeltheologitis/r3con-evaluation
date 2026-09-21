@@ -7,7 +7,7 @@ splits each chunk into sentences and embeds them into ``sentence_index.pkl``; at
 back to chunks. The paper/repo embed with a local ``Qwen3-Embedding-0.6B`` (sentence-
 transformers, GPU).
 
-Per the project's **embeddings-always-openai** rule (same as arag), we keep that METHOD
+Per the project's **embeddings-always-openai** rule, we keep that METHOD
 (sentence split → embed → top-k group, byte-for-byte in the vendored ``execute``) and swap
 ONLY the embedding backend to OpenAI ``text-embedding-3-small`` via litellm. Two pieces:
 
@@ -66,13 +66,12 @@ class OpenAIEmbedder:
     the vendored index build + tool use. Accumulates ``{total, calls}`` usage.
 
     Routing is by the **embedding model's own provider prefix** (``openai/…`` →
-    OpenAI via ``OPENAI_API_KEY`` from the environment), exactly like graphrag's
-    embedding ``ModelConfig`` — deliberately INDEPENDENT of the completion endpoint.
-    The completion model may be a local vLLM (``--base-url``), but per the project's
-    embeddings-always-openai rule the embedding is a separate OpenAI call; forwarding
-    the vLLM ``api_base`` here would 404 (the vLLM server doesn't serve
-    text-embedding-3-small). A self-hosted embedding ENDPOINT would need its own
-    base-url flag (none today; graphrag punts the same way)."""
+    OpenAI via ``OPENAI_API_KEY`` from the environment) — deliberately INDEPENDENT of
+    the completion endpoint. The completion model may be a local vLLM (``--base-url``),
+    but per the project's embeddings-always-openai rule the embedding is a separate
+    OpenAI call; forwarding the vLLM ``api_base`` here would 404 (the vLLM server
+    doesn't serve text-embedding-3-small). A self-hosted embedding ENDPOINT would need
+    its own base-url flag (none today)."""
 
     def __init__(self, model: str):
         self.model = model

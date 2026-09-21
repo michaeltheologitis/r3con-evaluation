@@ -14,7 +14,7 @@ in ``PROVENANCE.md``. No extra dependencies — pure stdlib + litellm (the harne
 SIMPLE NO-INDEX-REUSE logging (the flat per-run-folder layout): one self-contained folder per task
 run, the gist memory inside it, the TOTAL cost in the manifest, no content-addressing, no
 gist-memory reuse. The runner DOES resume — it skips tasks already completed for the same
-config (so a re-run doesn't redo finished experiments). Wired for Loong + CorpusQA.
+config (so a re-run doesn't redo finished experiments). Wired for Loong, CorpusQA and Dracula.
 """
 from .run import SUPPORTED_BENCHMARKS, run_one
 

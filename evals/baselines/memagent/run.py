@@ -17,11 +17,11 @@ litellm seam (``MemAgentLLM`` → vLLM), so ``usage`` is the TOTAL (every memory
 the final answer). SIMPLE NO-REUSE logging (the readagent/rlm layout): each task run gets
 its OWN folder ``logs/{benchmark}/memagent/{run_tag}/`` holding the memory trajectory
 (``memory_trajectory.json`` — every intermediate memory state), ``manifest.json`` (TOTAL
-cost), ``calls.json``, a live ``progress.json``, and (at score time) ``score.json``. The
-runner resumes (skips tasks done for the config).
+cost), ``calls.json``, and a live ``progress.json``. Nothing here grades — the raw answer
+is saved as-is for the external scoring repo that reads these logs. The runner resumes
+(skips tasks done for the config).
 
-SUPPORTED_BENCHMARKS = {loong, corpusqa, longhealth, dracula} — per-instance multi-doc bundles. (MINTEval
-is deliberately NOT wired yet — the maintainer's call.)
+SUPPORTED_BENCHMARKS = {loong, corpusqa, dracula} — per-instance multi-doc bundles.
 """
 from __future__ import annotations
 
@@ -125,7 +125,7 @@ def _build_problem(benchmark, task_id: str) -> str:
         instruction, question, _docs = benchmark.get_task(task_id)
         return f"{question}\n\n{instruction}"
     if name == "dracula":
-        # The bare question; the 45-doc corpus is the context folded into memory.
+        # The bare question; the 46-doc corpus is the context folded into memory.
         question, _docs = benchmark.get_task(task_id)
         return question
     raise ValueError(f"memagent has no problem assembly for benchmark {name!r}")

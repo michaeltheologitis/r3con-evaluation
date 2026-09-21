@@ -2,7 +2,7 @@
 
 HippoRAG uses the SAME simple no-reuse layout as ReadAgent/RLM/MemAgent: each task run is
 ONE self-contained folder ``logs/{benchmark}/hipporag/{run_tag}/`` holding the
-``manifest.json`` (success) OR ``error.json`` (failure), ``calls.json``, ``score.json``,
+``manifest.json`` (success) OR ``error.json`` (failure), ``calls.json``,
 AND the HippoRAG index itself (the OpenIE knowledge graph + embedding stores under
 ``index/``). There is **no ``inferences/`` subfolder and no shared index store**.
 
@@ -10,9 +10,9 @@ This cleaner tidies the dir and **reclaims disk** (the per-task ``index/`` graph
 bulk of it): it removes JUNK run folders — a ``ChildCrash`` / empty-or-unparseable
 ``error.json`` / incomplete (neither manifest nor error, e.g. a run killed mid-indexing) /
 transient-error run — while KEEPING successful runs (``manifest.json``) and the genuine
-model failures (``ContextWindowExceededError``, still counted in the analysis CLI's total
-view). Removing a junk folder takes its ``index/`` with it. ``--all-errors`` also removes
-genuine-failure folders; ``--dry-run`` previews.
+model failures (``ContextWindowExceededError``, still counted as a failed prediction by
+whatever grades these logs later). Removing a junk folder takes its ``index/`` with it.
+``--all-errors`` also removes genuine-failure folders; ``--dry-run`` previews.
 
     python scripts/clean_hipporag_logs.py                  # all hipporag benchmarks
     python scripts/clean_hipporag_logs.py --benchmark loong

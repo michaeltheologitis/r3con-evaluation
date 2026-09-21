@@ -1,18 +1,19 @@
 """Clean ReadAgent run folders — drop failed/interrupted runs and reclaim their disk.
 
-ReadAgent uses the SAME simple no-reuse layout as LinearRAG: each task run is ONE
+ReadAgent uses the SAME simple no-reuse layout as RLM/CodeAct: each task run is ONE
 self-contained folder ``logs/{benchmark}/readagent/{run_tag}/`` holding the
-``manifest.json`` (success) OR ``error.json`` (failure), ``calls.json``, ``score.json``,
-AND the gist memory itself (``gist_memory.json`` — the pooled pages + gists). There is
-**no ``inferences/`` subfolder and no shared ``_indices/`` store**, and the runner
-**always re-runs** (no resumption, no reuse).
+``manifest.json`` (success) OR ``error.json`` (failure), ``calls.json``, the live
+``progress.json``, AND the gist memory itself (``gist_memory.json`` — the pooled pages +
+gists). There is **no ``inferences/`` subfolder and no shared ``_indices/`` store**, and
+no gist memory is ever reused (a pending task rebuilds one from scratch).
 
-So this cleaner is NOT about forcing a re-run (every run already re-runs from scratch) —
-it tidies the dir and **reclaims disk**: it removes JUNK run folders — a ``ChildCrash`` /
-empty-or-unparseable ``error.json`` / incomplete (neither manifest nor error, e.g. a run
-the child was killed mid-pagination) / transient-error run — while KEEPING successful runs
-(``manifest.json``) and the genuine model failures (``ContextWindowExceededError``, which
-the analysis CLI still counts in its ⁺ view).
+So this cleaner tidies the dir and **reclaims disk**: it removes JUNK run folders — a
+``ChildCrash`` / empty-or-unparseable ``error.json`` / incomplete (neither manifest nor
+error, e.g. a run the child was killed mid-pagination) / transient-error run — while
+KEEPING successful runs (``manifest.json``) and the genuine model failures
+(``ContextWindowExceededError``, which whatever grades these logs later still counts as a
+failed prediction). Clearing a junk folder also lets that task re-run, since the runner
+resumes off the surviving manifest/error records.
 
 The per-folder classification is the SAME ``scripts._clean_common.classify_inference`` the
 other cleaners use — a run folder is just an inference folder that happens to sit directly
@@ -53,12 +54,13 @@ def clean_readagent_logs(
     """Remove junk ReadAgent run folders (and the gist memory each holds) under ``logs_dir``.
 
     Scans ``logs_dir/{benchmark}/readagent/{run_tag}/`` (every benchmark when ``benchmark`` is
-    None). Like LinearRAG there is no ``inferences/`` level: the run folders are the baseline
-    dir's direct children, so the shared ``clean_inference_dirs`` is pointed straight at
-    ``base_dir`` — each run folder is classified by its ``manifest.json`` / ``error.json``
-    exactly like an inference folder, and ``rmtree``-ing a junk one removes its
-    ``gist_memory.json`` too. Returns ``{deleted: [(Path, category)], kept, by_category,
-    dry_run}``; ``dry_run`` removes nothing.
+    None). Like the other flat-layout baselines there is no ``inferences/`` level: the run
+    folders are the baseline dir's direct children, so the shared ``clean_inference_dirs``
+    is pointed straight at ``base_dir`` — each run folder is classified by its
+    ``manifest.json`` / ``error.json`` exactly like an inference folder, and
+    ``rmtree``-ing a junk one removes its ``gist_memory.json`` too. Returns
+    ``{deleted: [(Path, category)], kept, by_category, dry_run}``; ``dry_run`` removes
+    nothing.
     """
     benchmark_glob = _slug(benchmark) if benchmark else "*"
     deleted: list[tuple[Path, str]] = []

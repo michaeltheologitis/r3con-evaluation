@@ -16,8 +16,9 @@ reproducing internals (see ``PROVENANCE.md``). The LLM routes through smolagents
 
 SIMPLE NO-REUSE logging (the readagent/rlm layout): one self-contained folder per task
 run holding the CodeAct trajectory (``trajectory.json``), ``manifest.json`` (the TOTAL token cost
-across every step), ``calls.json``, and (at score time) ``score.json``. The runner DOES resume —
-it skips tasks already completed for the same config. Wired for **loong + corpusqa**.
+across every step) and ``calls.json`` — the model's raw output and its cost, never a grade
+(grading happens outside this repo). The runner DOES resume — it skips tasks already completed for
+the same config. Wired for **loong + corpusqa + dracula**.
 """
 from .run import SUPPORTED_BENCHMARKS, run_one
 

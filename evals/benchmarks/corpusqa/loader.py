@@ -81,7 +81,7 @@ SETS = download_data.SETS
 
 # CorpusQA is 1m-only (``SETS == {"1m"}``), so there is nothing to filter: a bare
 # ``get_task_ids()`` already returns the whole benchmark — the 1m tier, all 4 domains
-# (329 tasks). The starter subset is therefore EMPTY, exactly like loong/longbenchv2:
+# (329 tasks). The starter subset is therefore EMPTY, exactly like loong's:
 # ``get_task_ids(**STARTER_FILTER)`` == ``get_task_ids()`` == all 329 1m tasks.
 STARTER_FILTER: dict = {}
 
@@ -101,8 +101,8 @@ _QUESTION_SEP = "\n# Question:\n"
 # Language is fully derived from the domain — only ``financial_zh`` is Chinese.
 _ZH_DOMAINS = frozenset({"financial_zh"})
 
-# Report/scoreboard display names for the ``domain`` axis (what ``get_task_metadata``
-# returns + what a report groups "by domain" on): the bilingual ``financial``
+# Display names for the ``domain`` axis (what ``get_task_metadata`` returns, and so
+# what a report built from these logs groups "by domain" on): the bilingual ``financial``
 # split (``financial_en`` + ``financial_zh``) MERGES into one ``financial`` bucket and the
 # ``_en``/``_zh`` suffix is dropped → three buckets, sorting to ``education`` / ``financial``
 # / ``real estate``. This is ONLY the report grouping — the raw 4-way domain still drives
@@ -351,10 +351,10 @@ def get_documents(task_id: str) -> list[str]:
     """The documents this task reasons over — the per-instance bundle, un-baked from
     the frozen prompt's ``# Document N:`` sections.
 
-    Graphrag/arag-facing accessor (the index is content-addressed by this document
-    SET). CorpusQA is per-instance multi-doc (no shared corpus → no ``get_corpus``),
-    so each instance usually gets its own index. Documents are returned in the
-    prompt's order.
+    The accessor an indexing baseline builds from (its index is content-addressed by
+    this document SET). CorpusQA is per-instance multi-doc (no shared corpus → no
+    ``get_corpus``), so each instance usually gets its own index. Documents are
+    returned in the prompt's order.
     """
     tier, rec = _locate(task_id)
     docs = _unbake(_read_row(tier, rec))[2]

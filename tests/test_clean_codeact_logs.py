@@ -1,6 +1,6 @@
 """Tests for ``scripts/clean_codeact_logs.py``.
 
-Synthetic log trees only (no real runs). CodeAct uses the same flat layout as LinearRAG / ReadAgent
+Synthetic log trees only (no real runs). CodeAct uses the same flat layout as ReadAgent
 / RLM: each run is ONE folder ``{benchmark}/codeact/{run_tag}/`` directly under the baseline dir (no
 ``inferences/`` level, no shared ``_indices/`` store), with the CodeAct trajectory INSIDE it
 (``trajectory.json``). So these pin: run folders are classified directly; a removed junk folder takes

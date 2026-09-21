@@ -23,10 +23,11 @@ DEVIATIONS (all also in PROVENANCE.md):
   joining lines), and hard-split any paragraph longer than ``word_limit`` words into
   word windows so pagination always has bounded units.
 - **Multi-document** (``paginate_documents``): Loong/CorpusQA give a per-instance
-  document BUNDLE; ReadAgent assumes a single article. We paginate each document
-  independently and pool the pages in document order, so a page never spans two
-  documents (the same per-document-then-pool convention the other multi-doc baselines
-  use). Page numbering is global across the pooled list.
+  document BUNDLE and Dracula the same 46-doc corpus for every question; ReadAgent
+  assumes a single article. We paginate each document independently and pool the pages
+  in document order, so a page never spans two documents (the same
+  per-document-then-pool convention the other multi-doc baselines use). Page numbering
+  is global across the pooled list.
 """
 from __future__ import annotations
 
@@ -39,8 +40,8 @@ from evals.baselines.readagent import prompts
 
 # Pagination hyperparameters — the ReadAgent-native ("original") defaults: ~600-word pages, no gist
 # length clause. These size the DEFAULT ``Regime`` (below) and the low-level functions' default
-# params. The regime is now selected AUTOMATICALLY per benchmark in ``run.py`` (loong + longhealth
-# use these; CorpusQA scales them ×10 with a 640-token gist hint) — no more manual pre-run flipping.
+# params. The regime is selected AUTOMATICALLY per benchmark in ``run.py`` (loong + dracula use
+# these; CorpusQA scales them ×10 with a 640-token gist hint) — nothing to flip before a run.
 # See PROVENANCE D10.
 _WORD_LIMIT = 600          # target words/page → ~90–126 pages on a Loong doc
 _START_THRESHOLD = 280     # words before <j> break-candidate labels start appearing
@@ -67,7 +68,7 @@ class Regime:
     gist_token_hint: int | None = None
 
 
-# The ReadAgent-native default (= what Loong ran as v2 / what LongHealth now runs). ``run.py`` maps
+# The ReadAgent-native default (= what Loong and Dracula run, labelled v2). ``run.py`` maps
 # each benchmark to a regime; this is the fallback when a function is called without one.
 DEFAULT_REGIME = Regime()
 
@@ -252,7 +253,7 @@ def gist_pages(
     """One gist (shortened page) per page — upstream ``quality_gisting``.
 
     ``gist_token_hint`` (the active ``Regime``'s value) selects the gist prompt: ``None`` → the
-    original no-length-clause prompt (Loong v2 / LongHealth); an int → the "should be in N tokens"
+    original no-length-clause prompt (Loong / Dracula, v2); an int → the "should be in N tokens"
     variant (CorpusQA v4). Gists are INDEPENDENT per page, so with ``max_workers > 1`` they are
     computed CONCURRENTLY; ``executor.map`` returns them in PAGE ORDER, so the gist list is
     byte-identical to the sequential version — a throughput optimization, not a method change
@@ -279,7 +280,7 @@ def build_gist_memory(
     Returns ``{"pages": [[para, ...], ...], "gists": [str, ...], "n_docs": int}``.
     Both lists are aligned (one gist per page). All LLM calls land on ``llm``.
     ``regime`` (selected per benchmark in ``run.py``) sizes the pages AND selects the gist
-    prompt (``gist_token_hint``); default = the original Loong/LongHealth regime.
+    prompt (``gist_token_hint``); default = the original Loong/Dracula regime.
 
     ``gist_workers`` bounds INNER-task concurrency for BOTH phases — pagination across
     documents and gisting across pages (default 1 = the upstream sequential loops). The output

@@ -5,10 +5,11 @@ ships none), build a HippoRAG 2 index over them (per-passage OpenIE → a phrase
 knowledge graph with synonym/context edges), then answer the composed query via
 HippoRAG's own retrieve→read front door (query→triple linking + recognition-memory
 filter + PPR over the graph → top-``qa_top_k`` passages → a reader LLM). ``raw_answer``
-is the reader's output; grading is deferred to the benchmark's judge at score time.
+is the reader's output; nothing here grades it — scoring happens outside this repo.
 
-Supports **loong / corpusqa / longhealth / dracula** (per-instance multi-doc bundles). The
-vendored upstream (``upstream/hipporag`` @ ``ad30fc3``, MIT) runs unmodified; all LLM
+Supports **loong / corpusqa / dracula** (multi-doc bundles; loong/corpusqa per instance,
+dracula's 46-doc corpus shared by every question). The vendored upstream
+(``upstream/hipporag`` @ ``ad30fc3``, MIT) runs unmodified; all LLM
 calls (OpenIE + filter + reader) route through the litellm seam (``llm.HippoRAGLLM``)
 and embeddings through the OpenAI seam (``embedding.HippoRAGOpenAIEmbedder``), injected
 by monkeypatching the two upstream factories. Deviation ledger: PROVENANCE.md.
@@ -34,7 +35,8 @@ SUPPORTED_BENCHMARKS: frozenset[str] = frozenset({"loong", "corpusqa", "dracula"
 _RUN_VERSION = "v1"
 
 # Embeddings are ALWAYS OpenAI text-embedding-3-small (the harness rule); recorded in
-# the run config so the analysis CLI can price the index-build embedding cost.
+# the run config so whatever prices these logs later can attribute the index-build
+# embedding cost.
 EMBEDDING_MODEL = "openai/text-embedding-3-small"
 
 
@@ -60,19 +62,20 @@ def _merge_usage(*records) -> dict[str, Any]:
 
 def _build_query(benchmark, task_id) -> str:
     """The single-string query posed to HippoRAG — the SAME composed task the other
-    baselines pose (the docs are the index here, dropped from the query)."""
+    baselines pose (structrag is the exception: for loong it renders the instance's
+    ``prompt_template``). The docs are the index here, dropped from the query."""
     name = _benchmark_name(benchmark)
     if name == "loong":
         instruction, question, _docs = benchmark.get_task(task_id)
         # Some Loong instances (paper Chain-of-Reasoning) have an empty question —
-        # the whole task is the instruction (mirror direct-llm/graphrag exactly).
+        # the whole task is the instruction, so that string alone is the query.
         return instruction if not question.strip() else f"{instruction}\n\n{question}"
     if name == "corpusqa":
         # question THEN the output-requirements block (answer-format + conflict rules).
         instruction, question, _docs = benchmark.get_task(task_id)
         return f"{question}\n\n{instruction}"
     if name == "dracula":
-        # The bare question; the 45-doc corpus is the index (get_task → (question, docs)).
+        # The bare question; the 46-doc corpus is the index (get_task → (question, docs)).
         question, _docs = benchmark.get_task(task_id)
         return question
     raise ValueError(f"hipporag has no query assembly for benchmark {name!r}")
@@ -125,8 +128,8 @@ def run_one(
 
     Writes the HippoRAG index under ``run_dir/index/``. Returns the flat-layout record:
     ``raw_answer`` + the TOTAL ``usage`` (OpenIE + filter + reader, one number) +
-    ``calls_full`` (every internal call) + a ``trace``. Grading is deferred to score
-    time (the benchmark's judge / parser).
+    ``calls_full`` (every internal call) + a ``trace``. Nothing here grades: the
+    benchmark's judge is run later, by whatever consumes these logs.
     """
     name = _benchmark_name(benchmark)
     if name not in CHUNK_SIZES:

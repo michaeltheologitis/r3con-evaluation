@@ -3,7 +3,7 @@
 claude-code shells out to the ``claude -p`` CLI; there is nothing to vendor and no Python LLM seam.
 The harness-side pieces are tested here with fakes — the ``claude`` subprocess is replaced by a
 canned ``stream-json`` stdout, so NO real CLI / Max login is needed and the whole file runs by
-default (no marker, like linearrag):
+default (no marker):
 
 - ``run``    — _build_task / _build_prompt / _write_docs / _subprocess_env / _build_cmd /
                _sandbox_prefix / _to_harness_usage, and a run_one that drives the REAL parsing of
@@ -145,7 +145,7 @@ def test_to_harness_usage_maps_modelusage_and_attributes_calls() -> None:
     # disaggregated buckets preserved so cost can be recomputed at any rate convention later.
     assert opus["input_tokens"] == 8 and opus["cache_read_input_tokens"] == 112084
     assert opus["cache_creation_input_tokens"] == 6030
-    # the {total, calls} shape the analysis/cost layer consumes.
+    # the {total, calls} usage shape every baseline records (cost is computed from it later).
     assert {c["model"] for c in usage["calls"]} == {"claude-opus-4-8", "claude-haiku-4-5-20251001"}
 
 

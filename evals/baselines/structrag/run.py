@@ -26,13 +26,14 @@ DEVIATIONS (vs upstream main.py):
     the per-task scratch dir already isolates tasks, and it dodges
     filesystem-unsafe task ids.
 
-SUPPORTED_BENCHMARKS = {loong, loogle, longbenchv2, corpusqa, longhealth, dracula}. ``casefacts`` is
-excluded: StructRAG restructures EVERY document per task, and casefacts is a single
-shared 2,978-doc corpus — restructuring it per claim is infeasible and has no
-upstream analogue (it would need a shared-structurization design decision). corpusqa
-fits — it is per-instance multi-doc (~5 docs/instance), like loong. The dispatch
-here is capability/name-based exactly like graphrag, so adding a benchmark later
-is a branch in ``_build_query`` (+ a title convention in ``_split_title_content``).
+SUPPORTED_BENCHMARKS = {loong, corpusqa, dracula} — all three benchmarks in this
+repo. StructRAG restructures EVERY document per task, so a benchmark only fits
+when a task's document set is small enough to rebuild per question: loong and
+corpusqa are per-instance multi-doc bundles, and dracula's shared corpus is 46
+documents. (A large shared corpus would not fit — restructuring it per question
+is infeasible and has no upstream analogue.) The dispatch here is name-based,
+like arag, so adding a benchmark later is a branch in ``_build_query`` (+ a title
+convention in ``_split_title_content``).
 
 Full deviation ledger: evals/baselines/structrag/PROVENANCE.md
 """
@@ -77,10 +78,10 @@ def _split_title_content(name: str, documents: list[str]) -> list[tuple[str, str
     Upstream consumed Loong docs that already carried a title — its ``get_content``
     emits ``《title》\\ncontent`` (financial) / ``title\\ncontent`` (paper), exactly
     what our loong loader reproduces — so for loong we split on the first newline
-    (the title, incl. the ``《》`` for financial, is preserved verbatim). loogle /
-    longbenchv2 / corpusqa have NO title convention (and no upstream StructRAG
-    reference — loogle/longbenchv2 are single context docs, corpusqa is per-instance
-    multi-doc), so we synthesize ``Document N``.
+    (the title, incl. the ``《》`` for financial, is preserved verbatim); dracula's
+    docs carry a title line of their own, so they split the same way. corpusqa has
+    NO title convention (and no upstream StructRAG reference — it is a per-instance
+    multi-doc bundle), so we synthesize ``Document N``.
     """
     if name in ("loong", "dracula"):
         # dracula docs open with their in-world source header ("DR. SEWARD'S DIARY",
@@ -113,9 +114,9 @@ def _build_query(benchmark, task_id) -> str:
     - **loong**: FAITHFUL to upstream main.py — the instance's ``prompt_template``
       with instruction/question filled and ``docs`` as the ``"......"`` placeholder
       (the documents become the structurized knowledge, not part of the query).
-    - **loogle / longbenchv2**: no upstream StructRAG reference; mirror the
-      harness's other baselines (graphrag / direct-llm ``_build_query``/``_compose``)
-      so the question posed is identical across baselines.
+    - **corpusqa / dracula**: no upstream StructRAG reference; mirror the
+      harness's other baselines (e.g. ``arag/run.py``'s ``_build_query``) so the
+      question posed is identical across baselines.
     """
     name = _benchmark_name(benchmark)
     if name == "loong":
@@ -129,7 +130,7 @@ def _build_query(benchmark, task_id) -> str:
         instruction, question, _docs = benchmark.get_task(task_id)
         return f"{question}\n\n{instruction}"
     if name == "dracula":
-        # The bare question; the 45 docs become the structurized knowledge.
+        # The bare question; the 46 docs become the structurized knowledge.
         question, _docs = benchmark.get_task(task_id)
         return question
     raise ValueError(f"structrag has no query assembly for benchmark {name!r}")
@@ -159,8 +160,9 @@ def run_one(
     only changes are the LLM seam (``StructRAGLLM``), the input (our loader via the
     connectors above), and an ephemeral per-task scratch dir for the KB round-trip.
     Returns the harness record: ``{raw_answer, usage, trace}`` — purely the model's
-    output (grading is deferred to score time). ``base_dir`` is unused (no index
-    store), kept for the ``run_one`` contract.
+    output (nothing in this repo grades it; the separate scoring repo reads these
+    logs). ``base_dir`` is unused (no index store), kept for the ``run_one``
+    contract.
     """
     name = _benchmark_name(benchmark)
     llm = StructRAGLLM(

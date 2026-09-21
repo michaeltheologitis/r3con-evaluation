@@ -2,7 +2,7 @@
 
 MemAgent uses the SAME simple no-reuse layout as ReadAgent/RLM: each task run is ONE
 self-contained folder ``logs/{benchmark}/memagent/{run_tag}/`` holding the
-``manifest.json`` (success) OR ``error.json`` (failure), ``calls.json``, ``score.json``,
+``manifest.json`` (success) OR ``error.json`` (failure), ``calls.json``,
 the live ``progress.json``, AND the memory trajectory itself (``memory_trajectory.json`` —
 every intermediate memory state). There is **no ``inferences/`` subfolder and no shared
 index store**.
@@ -11,9 +11,9 @@ This cleaner tidies the dir and **reclaims disk**: it removes JUNK run folders �
 ``ChildCrash`` / empty-or-unparseable ``error.json`` / incomplete (neither manifest nor
 error, e.g. a run killed mid-memory-loop) / transient-error run — while KEEPING successful
 runs (``manifest.json``) and the genuine model failures (``ContextWindowExceededError``,
-still counted in the analysis CLI's total view). Removing a junk folder takes its
-``memory_trajectory.json`` with it. ``--all-errors`` also removes genuine-failure folders;
-``--dry-run`` previews.
+still counted as a failed prediction by whatever grades these logs later). Removing a junk
+folder takes its ``memory_trajectory.json`` with it. ``--all-errors`` also removes
+genuine-failure folders; ``--dry-run`` previews.
 
     python scripts/clean_memagent_logs.py                  # all memagent benchmarks
     python scripts/clean_memagent_logs.py --benchmark loong

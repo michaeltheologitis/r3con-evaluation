@@ -9,8 +9,8 @@ scan still counts as "done" — so the task never re-runs:
   caught mid-flush);
 - a folder with **neither** ``manifest.json`` nor ``error.json`` (incomplete);
 - a **transient** ``error.json`` — any ``error_type`` outside the
-  ``FAILURE_ERROR_TYPES`` whitelist shared with the analysis CLI (e.g. a litellm
-  ``Timeout``): retryable infra noise, not a model failure.
+  ``FAILURE_ERROR_TYPES`` whitelist shared with whatever grades these logs later
+  (e.g. a litellm ``Timeout``): retryable infra noise, not a model failure.
 
 This removes those folders (so the runner re-dispatches just those tasks) while
 KEEPING real results and genuine model failures: any folder with a
@@ -18,10 +18,10 @@ KEEPING real results and genuine model failures: any folder with a
 prediction (``ContextWindowExceededError``) are left intact.
 ``--all-errors`` also removes those genuine-failure folders for a full retry.
 
-structrag, like direct-llm, is an inference-time baseline with **no shared index
-store**, so this is the simple inference-only cleaner (no ``_indices/`` handling —
-that is graphrag's ``scripts/clean_graphrag_logs.py``). The inference-folder logic
-all three baselines share lives in ``scripts/_clean_common.py``.
+structrag is an inference-time baseline with **no shared index store**, so this is
+the simple inference-only cleaner (no ``_indices/`` handling — arag is the one
+baseline that needs it, in ``scripts/clean_arag_logs.py``). The inference-folder
+logic every baseline's cleaner shares lives in ``scripts/_clean_common.py``.
 
     python scripts/clean_structrag_logs.py                      # all structrag benchmarks
     python scripts/clean_structrag_logs.py --benchmark loong

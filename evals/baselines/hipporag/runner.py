@@ -1,14 +1,15 @@
 """Runner for the HippoRAG 2 baseline.
 
-    python -m evals.baselines.hipporag --benchmark {loong,corpusqa,longhealth} \
+    python -m evals.baselines.hipporag --benchmark {loong,corpusqa,dracula} \
         [--model openai/gpt-5.4-nano] [--base-url URL --api-key KEY] [flags]
 
 SIMPLE NO-REUSE logging (the readagent/rlm/memagent layout): each task run gets its OWN
 folder ``logs/{benchmark}/hipporag/{run_tag}/`` with EVERYTHING inside — the HippoRAG
 index under ``index/`` (the OpenIE knowledge graph + embedding stores), ``manifest.json``
-(TOTAL cost — every OpenIE / filter / reader call folded into one number), ``calls.json``,
-and (at score time) ``score.json``. No ``inferences/``, no shared index, no
-content-addressing; a pending task always rebuilds its graph from scratch.
+(TOTAL cost — every OpenIE / filter / reader call folded into one number) and
+``calls.json``. No ``inferences/``, no shared index, no content-addressing; a pending
+task always rebuilds its graph from scratch. Nothing here grades a run — these folders
+are what an external scoring repo reads.
 
 It DOES resume: the parent scans existing run folders and skips tasks already completed
 for this exact config (model / seed / chunk_size / embedding_model / --config /
@@ -61,11 +62,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--limit", type=int, default=None, help="Run at most N PENDING tasks (stable order).")
     p.add_argument("--tasks", nargs="+", default=None, metavar="VARIANT",
                    help="Restrict to these task-id variants — the part after '@' in the id "
-                        "(LongHealth: task1 / task2 / task3, e.g. --tasks task1). A parent-mode "
+                        "(corpusqa: the context-length tier, e.g. --tasks 1m; corpusqa is "
+                        "1m-only, so that selects everything there). A parent-mode "
                         "selection filter only: NOT part of a task's identity, so a task's "
-                        "manifest/score is byte-identical whether or not you filter, and a later "
-                        "full run resumes the ones already done. Other benchmarks have a single "
-                        "variant (corpusqa: 1m), so this is really for LongHealth.")
+                        "manifest is byte-identical whether or not you filter, and a later "
+                        "full run resumes the ones already done. Loong and dracula ids carry "
+                        "no '@', so the filter matches nothing there.")
     p.add_argument("--task-id", type=str, default=None, help="Child mode: run this one task and exit.")
     p.add_argument("--run-tag", type=str, default=None,
                    help="Child mode: the unique folder name for this task run (set by the parent).")
@@ -73,9 +75,10 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 
 def build_run_config(args: argparse.Namespace) -> dict:
-    """The manifest ``config`` — the run identity resumption + analysis group by. The
-    per-benchmark ``chunk_size`` changes the run's output (passage boundaries → the whole
-    graph), so it is part of the identity."""
+    """The manifest ``config`` — the run's identity: resumption skips a task already done
+    under it, and whatever reads these logs groups by it. The per-benchmark ``chunk_size``
+    changes the run's output (passage boundaries → the whole graph), so it is part of the
+    identity."""
     config = {
         "benchmark": args.benchmark,
         "baseline": BASELINE,
@@ -102,8 +105,8 @@ def _new_run_tag() -> str:
 
 def _filter_task_variants(task_ids: list[str], variants) -> list[str]:
     """Keep only task ids whose ``@``-suffix variant is in ``variants`` (the ``--tasks`` filter).
-    The variant is the part after the last ``@`` (LongHealth ``…@task1``, corpusqa ``…@1m``); ids
-    with no ``@`` (e.g. Loong) never match, so ``--tasks`` is a no-op-then-error there."""
+    The variant is the part after the last ``@`` (corpusqa ``…@1m``); ids with no ``@``
+    (loong, dracula) never match, so ``--tasks`` is a no-op-then-error there."""
     wanted = set(variants)
     return [t for t in task_ids if t.rsplit("@", 1)[-1] in wanted]
 
@@ -179,12 +182,12 @@ def main(argv: list[str] | None = None) -> None:
     # ---- PARENT MODE: RESUME — skip tasks already done for this config, run the rest. ----
     benchmark = _common.load_benchmark_module(args.benchmark)
     all_ids = benchmark.get_task_ids(**benchmark.STARTER_FILTER)
-    if args.tasks:  # parent-mode subset filter (e.g. --tasks task1); children still run one id each
+    if args.tasks:  # parent-mode subset filter (e.g. --tasks 1m); children still run one id each
         all_ids = _filter_task_variants(all_ids, args.tasks)
         if not all_ids:
             raise SystemExit(
                 f"--tasks {sorted(set(args.tasks))} matched no {args.benchmark} task ids "
-                f"(the variant is the part after '@' in the id, e.g. 'task1' for LongHealth).")
+                f"(the variant is the part after '@' in the id, e.g. '1m' for CorpusQA).")
     if not all_ids:
         print(f"{args.benchmark}/{BASELINE}: nothing to run")
         return

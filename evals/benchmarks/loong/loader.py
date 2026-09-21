@@ -22,8 +22,8 @@ Axes, all filterable in ``get_task_ids``:
   4 ~200–250K), dialed by adding *more documents*, not noise.
 
 Scoring is judge-only (no exact match): see ``judge.py`` (1–100 rating, mean =
-Avg Score, fraction==100 = Perfect Rate). This module deliberately omits
-``get_task_choices`` and ``parse`` — like LooGLE, Loong is free-form generation.
+Avg Score, fraction==100 = Perfect Rate). Loong is free-form generation, so there
+are no answer choices to expose and nothing to parse out of an answer.
 """
 from __future__ import annotations
 
@@ -65,8 +65,9 @@ _TASK_NAMES = {
     4: "Chain of Reasoning",
 }
 
-# Report display config, read generically via getattr by whatever renders these
-# metadata axes (so that layer stays benchmark-agnostic — no name branching).
+# Display config for these metadata axes — consumed outside this repo, read
+# generically via getattr by whatever turns these logs into tables (so that layer
+# stays benchmark-agnostic — no name branching).
 # - Hide the redundant breakdown axes: `task_name` duplicates `task` (whose integer
 #   values the labels below annotate with the name), and `length` is the raw token
 #   count — a per-task continuous value that's just a finer-grained `set` (the
@@ -277,18 +278,20 @@ def get_documents(task_id: str) -> list[str]:
     """The documents this task reasons over — the resolved text of each filename
     in the instance's ``doc`` list.
 
-    Graphrag-facing accessor (the index is content-addressed by this document
-    SET). Loong is the motivating **per-instance multi-doc** case: each instance
-    has its own bundle, so distinct instances usually get distinct indexes, while
-    instances sharing a doc-set reuse one index automatically. No ``get_corpus``,
-    so graphrag treats Loong as per-task (indexes on demand in ``run_one``).
+    The accessor an indexing baseline builds from (its index is content-addressed
+    by this document SET). Loong is the motivating **per-instance multi-doc** case:
+    each instance has its own bundle, so distinct instances usually get distinct
+    indexes, while instances sharing a doc-set reuse one index automatically. There
+    is no ``get_corpus``, so an indexing baseline treats Loong as per-task (indexing
+    on demand in ``run_one``).
 
     Documents are returned in the instance's ``doc`` order. Upstream optionally
     shuffles + length-truncates when building the prompt string; we don't —
-    deterministic order is reproducible, and graphrag's index identity is
-    order-independent anyway (see ``graphrag/run.py:_content_fingerprint``). The
-    ``doc`` order is also what legal's positional title ``《判决文书{idx+1}》`` is keyed
-    to, and what the legal gold answers reference — so it must be preserved.
+    deterministic order is reproducible, and an index identity keyed on the doc-set
+    is order-independent anyway (see
+    ``evals/baselines/arag/run.py:_content_fingerprint``). The ``doc`` order is also
+    what legal's positional title ``《判决文书{idx+1}》`` is keyed to, and what the legal
+    gold answers reference — so it must be preserved.
 
     First call downloads + extracts the ~34 MB document pool (see
     :func:`_ensure_doc_dir`).

@@ -23,7 +23,7 @@ authors built their released corpus by counting ~1000 tokens with gpt-4o's token
 matching that tokenizer reproduces their exact chunk granularity for ANY backbone we then
 evaluate. This is the OPPOSITE situation from ``model_budget``: there, the agent's context
 stop-gate must track the *served* model (counting a Qwen prompt in gpt-4o tokens would
-mis-cap it — the deviation you flagged), so that counter is DYNAMIC. Here the served model
+mis-cap it — the defect D2 corrects), so that counter is DYNAMIC. Here the served model
 only *reads* the chunks; their size is fixed corpus prep, so the tokenizer is fixed to
 A-RAG's (gpt-4o). If a future experiment wants model-consistent chunking instead,
 `semantic-text-splitter` also takes an HF tokenizer (`from_huggingface_tokenizer`) — flip

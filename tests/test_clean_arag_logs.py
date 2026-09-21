@@ -1,6 +1,6 @@
 """Tests for ``scripts/clean_arag_logs.py``.
 
-Synthetic log trees only (no real runs). A-RAG, like graphrag, has a content-
+Synthetic log trees only (no real runs). A-RAG is the one baseline with a content-
 addressed ``_indices/`` store, so its cleaner needs the index-store layer on top of
 the shared inference-folder cleanup. These pin:
 
@@ -13,7 +13,7 @@ the shared inference-folder cleanup. These pin:
   *referenced* index is NEVER removed — even with the flag.
 - A-RAG's index is **LLM-independent** (``index_hash`` excludes the completion
   model/seed), so an index referenced by manifests from DIFFERENT completion models
-  is kept once — the cleaner reuses graphrag's shared ``clean_index_store``.
+  is kept once — the cleaner uses ``_clean_common``'s ``clean_index_store``.
 """
 from __future__ import annotations
 
@@ -201,10 +201,10 @@ def test_dry_run_deletes_nothing(tmp_path) -> None:
 
 
 def test_only_touches_arag_not_other_baselines(tmp_path) -> None:
-    direct = _mk_inf(tmp_path / "loong" / "direct-llm", "c1", _err("ChildCrash"))
-    graphrag = _mk_inf(tmp_path / "loong" / "graphrag", "c2", _err("ChildCrash"))
+    structrag = _mk_inf(tmp_path / "loong" / "structrag", "c1", _err("ChildCrash"))
+    other = _mk_inf(tmp_path / "loong" / "other-baseline", "c2", _err("ChildCrash"))
     clean_arag_logs(tmp_path)
-    assert direct.exists() and graphrag.exists()  # other baselines out of scope
+    assert structrag.exists() and other.exists()  # other baselines out of scope
 
 
 def test_benchmark_filter_limits_scope(tmp_path) -> None:

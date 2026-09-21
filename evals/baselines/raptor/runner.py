@@ -1,13 +1,13 @@
 """Runner for the RAPTOR baseline.
 
-    python -m evals.baselines.raptor --benchmark {loong,corpusqa} [flags]
+    python -m evals.baselines.raptor --benchmark {loong,corpusqa,dracula} [flags]
 
-SIMPLE NO-REUSE logging (the readagent/rlm layout): each task run gets its OWN
-folder ``logs/{benchmark}/raptor/{run_tag}/`` with EVERYTHING inside it — the built
-``tree.json``, ``manifest.json`` (with the TOTAL cost), ``calls.json``, a live
-``progress.json``, and (at score time) ``score.json``. No ``inferences/`` folder, no shared
-``_indices/`` store, no content-addressing; a pending task always rebuilds its tree from scratch
-inside its own folder (no tree is ever reused).
+SIMPLE NO-REUSE logging (the readagent/rlm layout): each task run gets its OWN folder
+``logs/{benchmark}/raptor/{run_tag}/`` with EVERYTHING inside it — the built ``tree.json``,
+``manifest.json`` (with the TOTAL cost), ``calls.json``, and a live ``progress.json``. Grading
+is not this repo's job — the separate scoring repo reads these folders. No ``inferences/``
+folder, no shared ``_indices/`` store, no content-addressing; a pending task always rebuilds
+its tree from scratch inside its own folder (no tree is ever reused).
 
 **Offline-embed / online-build split** (``--phase {all,embed,build}``): ``embed`` runs phase 1 — the
 OpenAI leaf embeddings (the heavy ~82% burst), NO vLLM — and writes a checkpoint (``embed.json`` +
@@ -59,7 +59,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--paper-hparams", action="store_true",
                    help="Use RAPTOR's PUBLISHED tree hyperparameters (chunk 100 / recluster 3500 / "
                         "summary 100 / retrieval top-10 @3500 tok) instead of the D12 large-corpus "
-                        "re-scale. For docs in RAPTOR's validated regime (<=~78K tok, e.g. LongHealth); "
+                        "re-scale. For docs in RAPTOR's validated regime (<=~78K tok); "
                         "do NOT use on the 1M-token corpora (chunk=100 explodes the leaf/summary count). "
                         "Folded into the run config (hashed), so paper vs D12 runs never mix.")
     p.add_argument("--base-url", type=str, default=None,
@@ -88,11 +88,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--limit", type=int, default=None, help="Run at most N tasks (stable order).")
     p.add_argument("--tasks", nargs="+", default=None, metavar="VARIANT",
                    help="Restrict to these task-id variants — the part after '@' in the id "
-                        "(LongHealth: task1 / task2 / task3, e.g. --tasks task1). A parent-mode "
+                        "(corpusqa: the context-length tier, e.g. --tasks 1m). A parent-mode "
                         "selection filter only: NOT part of a task's identity, so a task's "
-                        "manifest/score is byte-identical whether or not you filter, and a later "
-                        "full run resumes the ones already done. Other benchmarks have a single "
-                        "variant (corpusqa: 1m), so this is really for LongHealth.")
+                        "manifest is byte-identical whether or not you filter, and a later "
+                        "full run resumes the ones already done. Only corpusqa ids carry a "
+                        "variant, and it has a single wired tier (1m), so this can only select "
+                        "all of them or nothing.")
     p.add_argument("--task-id", type=str, default=None, help="Child mode: run this one task and exit.")
     p.add_argument("--run-tag", type=str, default=None,
                    help="Child mode: the unique folder name for this task run (set by the parent).")
@@ -100,7 +101,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 
 def build_run_config(args: argparse.Namespace) -> dict:
-    """The manifest ``config`` — the run identity the analysis CLI groups by + resumption keys on.
+    """The manifest ``config`` — the run identity resumption keys on, and what an external
+    consumer of these logs groups runs by.
     ``--phase`` / ``--embed-workers`` / ``--summary-workers`` are NOT here (they don't change a run's
     output — same embeddings, same tree — so a split run is byte-compatible with ``--phase all``)."""
     config = {
@@ -264,8 +266,8 @@ def _pending_for_phase(args, all_ids, embedded: dict, completed: set) -> list[tu
 
 def _filter_task_variants(task_ids: list[str], variants) -> list[str]:
     """Keep only task ids whose ``@``-suffix variant is in ``variants`` (the ``--tasks`` filter).
-    The variant is the part after the last ``@`` (LongHealth ``…@task1``, corpusqa ``…@1m``); ids
-    with no ``@`` (e.g. Loong) never match, so ``--tasks`` is a no-op-then-error there."""
+    The variant is the part after the last ``@`` (corpusqa ``…@1m``); ids with no ``@`` (Loong,
+    Dracula) never match, so ``--tasks`` is a no-op-then-error there."""
     wanted = set(variants)
     return [t for t in task_ids if t.rsplit("@", 1)[-1] in wanted]
 
@@ -286,12 +288,12 @@ def main(argv: list[str] | None = None) -> None:
     #      phase-1 checkpoint folders; `embed`/`all` mint fresh folders for not-yet-done tasks. ----
     benchmark = _common.load_benchmark_module(args.benchmark)
     all_ids = benchmark.get_task_ids(**benchmark.STARTER_FILTER)
-    if args.tasks:  # parent-mode subset filter (e.g. --tasks task1); children still run one id each
+    if args.tasks:  # parent-mode subset filter (e.g. --tasks 1m); children still run one id each
         all_ids = _filter_task_variants(all_ids, args.tasks)
         if not all_ids:
             raise SystemExit(
                 f"--tasks {sorted(set(args.tasks))} matched no {args.benchmark} task ids "
-                f"(the variant is the part after '@' in the id, e.g. 'task1' for LongHealth).")
+                f"(the variant is the part after '@' in the id, e.g. '1m' for corpusqa).")
     if not all_ids:
         print(f"{args.benchmark}/{BASELINE}: nothing to run")
         return

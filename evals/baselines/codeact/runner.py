@@ -1,11 +1,12 @@
 """Runner for the CodeAct (smolagents ``CodeAgent``) baseline.
 
-    python -m evals.baselines.codeact --benchmark {loong,corpusqa} [flags]
+    python -m evals.baselines.codeact --benchmark {loong,corpusqa,dracula} [flags]
 
 SIMPLE NO-INDEX-REUSE logging (the readagent/rlm layout): each task run gets its OWN
 folder ``logs/{benchmark}/codeact/{run_tag}/`` with EVERYTHING inside it — the CodeAct trajectory
-(``trajectory.json``), ``manifest.json`` (with the TOTAL cost), ``calls.json``, and (at score time)
-``score.json``. No ``inferences/`` folder, no shared ``_indices/`` store, no content-addressing.
+(``trajectory.json``), ``manifest.json`` (with the TOTAL cost) and ``calls.json``. No
+``inferences/`` folder, no shared ``_indices/`` store, no content-addressing — and no grading
+either: this runner only records what the agent produced, for the separate scoring repo to read.
 
 It DOES resume: the parent scans existing run folders and **skips tasks already completed for this
 exact config** (model / seed / ``--config`` / ``max_steps`` / ``run_version`` — matched against each
@@ -68,8 +69,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 
 def build_run_config(args: argparse.Namespace) -> dict:
-    """The manifest ``config`` — the run identity the analysis CLI groups by AND resumption matches
-    on. Purely descriptive (no hashing — nothing is reused)."""
+    """The manifest ``config`` — the run identity a later reader of these logs groups by AND
+    resumption matches on. Purely descriptive (no hashing — nothing is reused)."""
     config = {
         "benchmark": args.benchmark,
         "baseline": BASELINE,

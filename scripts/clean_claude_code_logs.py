@@ -2,16 +2,17 @@
 
 claude-code uses the SAME simple no-reuse layout as readagent/rlm/codeact: each task
 run is ONE self-contained folder ``logs/{benchmark}/claude-code/{run_tag}/`` holding the
-``manifest.json`` (success) OR ``error.json`` (failure), ``score.json``, AND the full
+``manifest.json`` (success) OR ``error.json`` (failure), plus the full
 ``trajectory.jsonl`` (the verbatim ``stream-json``). There is **no ``inferences/`` subfolder and no
 shared ``_indices/`` store**.
 
 This cleaner removes JUNK run folders — a ``ChildCrash`` / empty-or-unparseable ``error.json`` /
 incomplete (neither manifest nor error) / **transient-error** run — while KEEPING successful runs
-(``manifest.json``) and the genuine model failures (``ContextWindowExceededError``, which the
-analysis CLI still counts in its ⁺ view). The **HTTP-429 rate-limit** errors claude-code hits under
-the Max plan are ``RuntimeError`` (NOT in ``FAILURE_ERROR_TYPES``), so they classify as **transient**
-and are cleared by default — clearing them lets those tasks re-run once the rate-limit window resets.
+(``manifest.json``) and the genuine model failures (``ContextWindowExceededError``, which whatever
+grades these logs later still counts as a failed prediction). The **HTTP-429 rate-limit** errors
+claude-code hits under the Max plan are ``RuntimeError`` (NOT in ``FAILURE_ERROR_TYPES``), so they
+classify as **transient** and are cleared by default — clearing them lets those tasks re-run once
+the rate-limit window resets.
 
 The per-folder classification is the SAME ``scripts._clean_common.classify_inference`` the other
 cleaners use — a run folder is just an inference folder that sits directly under the baseline dir

@@ -1,1 +1,1 @@
-"""Evaluation benchmarks and baselines for grounded reasoning experiments."""
+"""Evaluation harness: the benchmarks, the baselines, and the R3Con method."""

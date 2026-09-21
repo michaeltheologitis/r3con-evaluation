@@ -4,10 +4,10 @@
 
 SIMPLE NO-INDEX-REUSE logging (the flat per-run-folder layout): each task run gets its OWN folder
 ``logs/{benchmark}/readagent/{run_tag}/`` with EVERYTHING inside it — the gist memory
-(``gist_memory.json``), ``manifest.json`` (with the TOTAL cost), ``calls.json``, and (at
-score time) ``score.json``. No ``inferences/`` folder, no shared ``_indices/`` store, and no
-content-addressing; a pending task always builds its gist memory from scratch inside its own
-folder (no gist memory is ever reused).
+(``gist_memory.json``), ``manifest.json`` (with the TOTAL cost) and ``calls.json``. Nothing
+here grades a run; a separate scoring repo reads ``logs/`` afterwards. No ``inferences/``
+folder, no shared ``_indices/`` store, and no content-addressing; a pending task always
+builds its gist memory from scratch inside its own folder (no gist memory is ever reused).
 
 It DOES resume, though: the parent scans existing run folders and **skips tasks already
 completed for this exact config** (model / seed / ``--config`` / ``run_version`` — matched
@@ -61,7 +61,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
                    help="INNER-task concurrency: how many pages gist (and how many docs paginate) "
                         "at once WITHIN a task. Default 8. A pure throughput knob — outputs are "
                         "order-preserved + identical, and it is NOT part of the run identity, so it "
-                        "never splits resumption/analysis groups (existing sequential runs resume "
+                        "never splits resumption groups (existing sequential runs resume "
                         "under it). NOTE total load on the endpoint is max_workers × gist_workers.")
     p.add_argument("--limit", type=int, default=None, help="Run at most N tasks (stable order).")
     p.add_argument("--task-id", type=str, default=None, help="Child mode: run this one task and exit.")
@@ -71,8 +71,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 
 def build_run_config(args: argparse.Namespace) -> dict:
-    """The manifest ``config`` — the run identity the analysis CLI groups by. Purely
-    descriptive (no hashing — nothing is reused)."""
+    """The manifest ``config`` — the run identity resumption matches on (and whatever reads
+    these logs later groups by). Purely descriptive (no hashing — nothing is reused)."""
     config = {
         "benchmark": args.benchmark,
         "baseline": BASELINE,
@@ -88,7 +88,7 @@ def build_run_config(args: argparse.Namespace) -> dict:
 
 def _litellm_kwargs(args: argparse.Namespace) -> dict:
     # gist_workers rides here (a runtime channel), NOT in run_config — it's a throughput knob,
-    # not part of the run identity (so it never splits resumption/analysis). run_one reads it;
+    # not part of the run identity (so it never splits resumption groups). run_one reads it;
     # ReadAgentLLM ignores the extra key.
     return {"model": _common.with_provider_prefix(args.model),
             "api_base": args.base_url, "api_key": args.api_key,

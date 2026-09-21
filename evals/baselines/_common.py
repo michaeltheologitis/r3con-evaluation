@@ -7,15 +7,20 @@ mechanism those runners share: content hashing, the log-store paths, model-id
 canonicalization, the resumption scan, and the manifest / error serialization.
 Nothing here branches on a benchmark or baseline name.
 
-Log layout (per (benchmark, baseline)) — index store and inference store are
-DECOUPLED, both content-addressed; no "run" folder:
+Log layout, content-addressed flavour (arag, structrag) — index store and inference
+store are DECOUPLED, both content-addressed; no "run" folder:
 
     logs/{benchmark}/{baseline}/
-      _indices/{index_hash}/                # graphrag only; built once, shared
-          <parquets>, lancedb/, index_usage.json, index_meta.json
+      _indices/{index_hash}/                # arag only; built once, shared
+          chunks.json, index/, index_usage.json, index_meta.json
       inferences/{inference_hash}/
           manifest.json                     # ONE successful inference (model output)
           error.json                        # OR: this task failed (recorded, not retried)
+
+The other baselines use a flat one-folder-per-run layout instead — everything a run
+builds lives inside its own folder and nothing is reused; ``scan_completed_task_ids``
+below is their resumption scan — raptor apart, which shares the layout but needs its
+own phase-aware scan (see that function's docstring).
 
 A dispatched task ends with EXACTLY ONE of ``manifest.json`` / ``error.json``, so
 both count as "done" for resumption (a recorded failure is not re-attempted).
@@ -37,10 +42,10 @@ from evals.settings import (
     settings,
 )
 
-# Load API keys from .env into os.environ so LiteLLM and graphrag both pick them
-# up. Importing evals.llm would also do this, but that pulls litellm into the
-# import graph even for baselines that don't use it; doing it explicitly here
-# keeps the helper self-contained.
+# Load API keys from .env into os.environ so LiteLLM and any vendored code that reads
+# the environment directly both pick them up. Importing evals.llm would also do this,
+# but that pulls litellm into the import graph even for baselines that don't use it;
+# doing it explicitly here keeps the helper self-contained.
 try:
     from dotenv import load_dotenv
     load_dotenv(settings.ENV_FILE)
@@ -134,21 +139,23 @@ def scan_completed_inference_hashes(base: Path) -> set[str]:
 def scan_completed_task_ids(base: Path, run_config: dict[str, Any]) -> set[str]:
     """Task ids already finished for ``run_config`` under a FLAT per-run-folder baseline.
 
-    The content-addressed baselines name each folder by ``inference_hash`` (config +
-    task), so resumption there is a folder-name scan. readagent / rlm instead use
-    one random-hex folder per RUN with the index inside it — NO content-addressing, NO
-    folder-name signal. But every ``manifest.json`` / ``error.json`` records its
-    ``task_id`` AND its full ``config``, so resumption needs neither: scan the run
-    folders (direct children of ``base``) and collect the task ids whose record's
-    ``config`` matches ``run_config`` exactly.
+    The content-addressed baselines (arag, structrag) name each folder by
+    ``inference_hash`` (config + task), so resumption there is a folder-name scan. The
+    flat-layout ones — readagent, hipporag, memagent, codeact, rlm, claude-code — instead
+    use one random-hex folder per RUN with whatever they built inside it: NO
+    content-addressing, NO folder-name signal. (raptor shares that layout but needs its
+    own scan, since it also tracks a phase-1 checkpoint.) But every ``manifest.json`` /
+    ``error.json`` records its ``task_id`` AND its full ``config``, so resumption needs
+    neither: scan the run folders (direct children of ``base``) and collect the task ids
+    whose record's ``config`` matches ``run_config`` exactly.
 
     "Finished" = a ``manifest.json`` (succeeded) OR ``error.json`` (failed, recorded) —
     a recorded failure is NOT retried (delete its folder to retry), same policy as the
     content-addressed scan. Config-scoping (canonical-JSON equality) is what keeps a
-    different experiment — another model / seed / ``--config`` / ``lookup_method`` /
-    ``run_version`` — from counting as "done": those rebuild from scratch. This restores
-    resumption WITHOUT restoring index reuse (a pending task still builds its own fresh
-    index inside its own folder).
+    different experiment — another model / seed / ``--config`` / ``run_version`` or any
+    other baseline-specific knob — from counting as "done": those rebuild from scratch.
+    This restores resumption WITHOUT restoring index reuse (a pending task still builds
+    its own fresh index inside its own folder).
     """
     if not base.exists():
         return set()

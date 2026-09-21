@@ -1,11 +1,13 @@
 # r3con-evaluation
 
-The **evaluation repo**: three grounded-reasoning benchmarks, nine published
-baselines, and one shared contract so any method can be measured against them
-without re-plumbing anything.
+The **evaluation repo**: three grounded-reasoning benchmarks, nine baselines
+(eight published methods plus a frontier-agent reference point), and one shared
+contract so any method can be measured against them without re-plumbing anything.
 
 - **What each baseline is**, conceptually and as wired → [BASELINES.md](BASELINES.md).
 - **Per-baseline deviations from upstream** → `evals/baselines/<name>/PROVENANCE.md`.
+- **Every vendored upstream and its license** → [THIRD_PARTY.md](THIRD_PARTY.md).
+- **This repo's own code is MIT** → [LICENSE](LICENSE).
 
 ```
 evals/
@@ -13,7 +15,7 @@ evals/
   baselines/<name>/                      one self-contained package per baseline
   r3con/                                 the method (see evals/r3con/README.md)
   llm/                                   the LiteLLM seam + token accounting
-scripts/                                 log cleaners
+scripts/                                 log cleaners + the method's run entry points
 analysis/                                empty — scoring and figures live in a separate repo
 logs/                                    run outputs — gitignored, never committed
 tests/
@@ -23,12 +25,16 @@ tests/
 
 ```bash
 uv sync --extra test                                  # harness + tests
+uv sync --extra test --extra r3con                    # ...plus the method itself
 uv sync --extra test --extra structrag --extra arag   # ...plus specific baselines
 ```
 
-Every baseline that needs one has its own extra (`structrag`, `arag`, `raptor`,
-`hipporag`, `memagent`, `codeact`, `rlms`); `readagent` and `claude-code` need
-none. All are co-installable in one environment.
+The method declares its own extra, `r3con` (jinja2 / pyyaml / tiktoken) — what
+`evals/r3con/` itself needs, named explicitly rather than leaned on
+transitively. Every baseline that needs one has its own extra too (`structrag`,
+`arag`, `raptor`, `hipporag`, `memagent`, `codeact`, `rlms`); `readagent` and
+`claude-code` need none. `full` adds the notebook and plotting tooling on top of
+`test`. All are co-installable in one environment.
 
 Put `OPENAI_API_KEY` in `.env` (the judges and every embedding call route to
 OpenAI). Completions can route anywhere — see the run examples below.
@@ -80,21 +86,45 @@ process exactly once — no retries — and ends with either a `manifest.json` o
 --tool-call-parser hermes` on vLLM); `claude-code` shells out to the `claude` CLI
 and runs on a Max login, not the served model.
 
+## Running the method
+
+R3Con — the method under evaluation — lives in `evals/r3con/` and has its own
+per-benchmark entry points (install the `r3con` extra first):
+
+```bash
+python scripts/r3con/loong/run.py --set 1 --n 5 --inference both
+python scripts/r3con/corpusqa/run.py --limit 5 --inference both
+python scripts/r3con/dracula/run.py --limit 1 --inference both
+```
+
+The pipeline stages, the run-config that is the experiment identity, the
+per-stage versioned prompts, and what a run leaves on disk are documented in
+[evals/r3con/README.md](evals/r3con/README.md).
+
 ## Output
 
 This repo **runs methods and records what they produced** — it does not grade or
 aggregate. Each benchmark still exposes `score` / `score_details` (its judge), for
 whatever reads these logs later; scoring, tables and figures live outside this repo.
 
-Logs live at `logs/{benchmark}/{baseline}/`, one folder per run holding the
-manifest, the method's own artifacts (trajectory, index, memory — whatever it
-builds) and `calls.json`. **Token cost is captured completely**:
-every completion and every embedding a task makes, in one `usage` record.
+Baseline logs live at `logs/{benchmark}/{baseline}/`, one folder per task-run
+holding the manifest (or an `error.json` if it failed), the method's own
+artifacts (trajectory, index, memory — whatever it builds) and `calls.json`.
+Two are content-addressed: `arag` and `structrag` nest that per-task folder
+under `inferences/{hash}/`, and `arag`'s index is not in it at all — it sits in
+a sibling `_indices/`, keyed by the document set and the embedding/chunker
+config (not by the agent's LLM), so runs over the same bundle reuse one build.
+R3Con writes its own layout — one folder per task-run under `logs/r3con/`, with
+every stage's intermediates inside (see
+[evals/r3con/README.md](evals/r3con/README.md)). **Token cost is captured
+completely** either way: every completion and every embedding a task makes lands
+in one `usage` record per task, in the same `{total, calls}` shape — so a
+baseline's cost and R3Con's are comparable field for field.
 
 ## Tests
 
 ```bash
-uv run pytest -q          # 557 tests, all fake-driven (no API calls)
+uv run pytest -q          # 747 tests, all fake-driven (no API calls)
 ```
 
 Tests that hit a real model are marker-gated and deselected by default

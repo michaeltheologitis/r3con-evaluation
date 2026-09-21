@@ -9,14 +9,14 @@ failure was recorded:
   caught mid-flush);
 - a ``ChildCrash`` ``error.json`` (the child died on a signal mid-request);
 - any other ``error.json`` whose ``error_type`` is NOT a genuine failed
-  prediction (``FAILURE_ERROR_TYPES`` — the same whitelist the analysis CLI
-  folds into its ⁺ columns): a ``Timeout`` &c. is transient infra noise, so
-  keeping it would silently park the task forever.
+  prediction (``FAILURE_ERROR_TYPES`` — the same whitelist whatever grades these
+  logs later keys on): a ``Timeout`` &c. is transient infra noise, so keeping it
+  would silently park the task forever.
 
 while KEEPING real results (any ``manifest.json``) and the genuine model
 failures (``ContextWindowExceededError`` — removed only with ``--all-errors``).
-This module owns that per-folder classification + deletion so the three cleaners
-share ONE copy (arag layers its ``_indices/`` store handling on top).
+This module owns that per-folder classification + deletion so every per-baseline
+cleaner shares ONE copy (arag layers its ``_indices/`` store handling on top).
 """
 from __future__ import annotations
 
@@ -26,9 +26,9 @@ from pathlib import Path
 from typing import Callable
 
 # The whitelist of error_types that are genuine failed predictions — defined once
-# beside build_error_record (which writes error_type) and shared with the
-# analysis layer, so "what the cleaner keeps" and "what the report counts as a
-# failed prediction" can never diverge.
+# beside build_error_record (which writes error_type) and shared with whatever
+# grades these logs later, so "what the cleaner keeps" and "what a report counts
+# as a failed prediction" can never diverge.
 from evals.baselines._common import FAILURE_ERROR_TYPES
 
 # Categories removed by default; "real_error" is a genuine failed prediction
@@ -90,8 +90,8 @@ def clean_inference_dirs(
     ``keep_if`` is an optional ``(inf_dir) -> bool`` predicate consulted ONLY for folders that
     would otherwise be classified ``"incomplete"`` (neither manifest nor error): a truthy return
     RESCUES the folder (keeps it). This is for a valid mid-pipeline state that looks "incomplete"
-    by file presence — e.g. linearrag's phase-1 ``retrieval.json`` checkpoint awaiting ``--phase
-    read``. Default ``None`` = no rescue, so every existing caller is unchanged.
+    by file presence — e.g. raptor's phase-1 ``embed.json`` checkpoint awaiting ``--phase
+    build``. Default ``None`` = no rescue, so every existing caller is unchanged.
     """
     deleted: list[tuple[Path, str]] = []
     kept = 0
@@ -110,11 +110,11 @@ def clean_inference_dirs(
     return deleted, kept
 
 
-# ---- index-store cleaning (shared by the INDEXED baselines: graphrag, arag) ----
+# ---- index-store cleaning (used by the one INDEXED baseline here: arag) ----
 
 # An index build writes these two receipt files LAST (after a clean build), so their
 # joint presence means "build completed"; a dir missing either was interrupted mid-build.
-# Same sentinel the runners' `_index_is_built` probes, so the cleaner and the runtime agree.
+# Same sentinel arag's `_index_is_built` probes, so the cleaner and the runtime agree.
 INDEX_RECEIPTS = ("index_meta.json", "index_usage.json")
 
 # The index-dir deletion categories (vs the inference INTERRUPTION_CATEGORIES above), so
@@ -132,8 +132,8 @@ def classify_index(index_dir: Path, referenced: set[str], prune_orphans: bool) -
     """Deletion category for a content-addressed index dir, or None to KEEP it.
 
     - referenced by any surviving manifest -> None  (in use — NEVER deleted; the safety
-      invariant: a content-addressed index is shared, e.g. across graphrag's four search
-      modes, or across arag's completion models — the index is LLM-independent)
+      invariant: a content-addressed index is shared, e.g. across arag's completion
+      models — the index is LLM-independent)
     - unreferenced + missing receipts      -> "half_built"  (interrupted build)
     - unreferenced + complete              -> "orphan" if prune_orphans else None
     """
@@ -152,7 +152,7 @@ def clean_index_store(
     Returns ``(deleted, kept, n_referenced_present)`` where ``deleted`` is a list of
     ``(index_dir, category)``. Never removes a referenced index (the safety invariant);
     in ``dry_run`` nothing is removed but the same would-be-deleted list is returned.
-    Shared by the indexed baselines' cleaners (graphrag, arag).
+    Used by the indexed baseline's cleaner (arag).
     """
     deleted: list[tuple[Path, str]] = []
     kept = 0
@@ -174,13 +174,13 @@ def clean_index_store(
 def referenced_index_hashes(inferences: Path) -> set[str]:
     """The set of ``index_hash`` strings any surviving ``manifest.json`` references.
 
-    A graphrag manifest records its index via ``index_ref`` (the ``index_hash``
-    string). Reads every ``manifest.json`` under ``inferences/`` and collects the
-    non-null ``index_ref`` values — the indices that MUST be kept (the four search
-    modes share one index, so an index is "in use" if ANY manifest
-    points at it). Unreadable manifests are skipped (don't drop a real reference on
-    a transient read error — but a half-written manifest has no answer to keep
-    anyway)."""
+    An indexing baseline's manifest records its index via ``index_ref`` (the
+    ``index_hash`` string). Reads every ``manifest.json`` under ``inferences/`` and
+    collects the non-null ``index_ref`` values — the indices that MUST be kept (one
+    LLM-independent index serves many completion models, so an index is "in use" if
+    ANY manifest points at it). Unreadable manifests are skipped (don't drop a real
+    reference on a transient read error — but a half-written manifest has no answer to
+    keep anyway)."""
     refs: set[str] = set()
     if not inferences.is_dir():
         return refs

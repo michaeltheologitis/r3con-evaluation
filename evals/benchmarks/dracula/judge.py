@@ -2,9 +2,10 @@
 
 Judges free-form answers to the questions in ``questions.json`` (the Dracula
 showcase corpus — see ``split.py`` beside this file) against their gold answers.
-Mirrors ``evals/benchmarks/loogle/judge.py`` (structured output: a ``reasoning``
-then a ``verdict``; an empty answer scores 0 without a paid call), with ONE
-difference — this benchmark grades every answer **twice**:
+Built on the same pattern as the other judges here (structured output, a reasoning
+field generated before the verdict — here ``reasoning`` then ``verdict``; an empty
+answer short-circuits to the floor score without a paid call), with ONE difference —
+this benchmark grades every answer **twice**:
 
 * **strict**  — against ``questions.json``'s ``answer`` (the full 13-victim roster).
 * **lenient** — Mr. Swales may be omitted. Judged with the **same prompt** against
@@ -23,10 +24,10 @@ nine — which the two-gold construction cannot do.
 existing fields:
 
 * ``score``    — the **strict** 0/1. A report reads this, so its headline
-  accuracy for dracula is the strict metric (unchanged behaviour).
+  accuracy for dracula is the strict metric.
 * ``parsed``   — the pair of verdicts, e.g. ``"strict=correct, lenient=correct"``
-  (``parsed`` is unused by the judge benchmarks and is persisted verbatim into
-  ``score.json`` by whatever grades these logs, so the lenient grade is cached for
+  (the other two benchmarks leave ``parsed`` as ``None``, and anything that
+  persists a ScoreResult carries it verbatim, so the lenient grade is cached for
   free). Decode it with :func:`read_verdicts`.
 * ``rationale``— both judges' reasoning, labelled by which gold each ran against.
 
@@ -49,16 +50,16 @@ from .loader import _load
 # Fixed for reproducibility — judging is best-effort deterministic.
 _JUDGE_SEED = 0
 
-# Identity + VERSION of this benchmark's scoring mechanism — recorded in
-# score.json's ``scorer`` and part of its cache key. BUMP it whenever the grading
-# mechanism changes in a way that can alter scores. v6: dual strict+lenient
-# grading (two calls per answer, same prompt, two golds). v7: counts must be
-# STATED, not inferred by the grader. v8: v7 was over-strict — a qualifier around
-# the CORRECT number ("at least 13") is fine. v9: the accumulated rule-list was
-# replaced by ONE rule + six worked examples (see SYSTEM_PROMPT).
+# Identity + VERSION of this benchmark's scoring mechanism — exported so whatever
+# grades these logs can record it beside each grade and key its cache on it. BUMP it
+# whenever the grading mechanism changes in a way that can alter scores. v6: dual
+# strict+lenient grading (two calls per answer, same prompt, two golds). v7: counts
+# must be STATED, not inferred by the grader. v8: v7 was over-strict — a qualifier
+# around the CORRECT number ("at least 13") is fine. v9: the accumulated rule-list
+# was replaced by ONE rule + six worked examples (see SYSTEM_PROMPT).
 SCORER = "dracula-judge-v9"
 
-# The grader model score.json caches against (its ``scored_with``).
+# The grader model a cached grade is keyed against.
 GRADER_MODEL = JUDGE_MODEL
 
 # Canonical slug of the grader model, stamped on each ScoreResult's ``model`` field.
@@ -214,10 +215,10 @@ def encode_verdicts(strict: int, lenient: int) -> str:
 
 
 def read_verdicts(parsed: str | None) -> tuple[int, int] | None:
-    """Decode a ``parsed`` string (or a cached ``score.json``'s) → ``(strict, lenient)``.
+    """Decode a ``parsed`` string (fresh or cached) → ``(strict, lenient)``.
 
     Returns None when ``parsed`` is absent or not in this benchmark's format (e.g. a
-    score.json written by an older SCORER).
+    grade cached by an older SCORER).
     """
     if not parsed:
         return None

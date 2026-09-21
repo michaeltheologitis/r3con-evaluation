@@ -1,13 +1,13 @@
-"""CorpusQA LLM judge — answer-equivalence (ORM), 0/1, the LooGLE pattern.
+"""CorpusQA LLM judge — answer-equivalence (ORM), 0/1.
 
 CorpusQA is judge-only (no exact match): a judge model decides whether the model's
 answer is **equivalent** to the programmatically-computed gold (same value/meaning,
 tolerating ``282`` vs ``282.0``, formatting, units, etc.) → 1/0. This reproduces
-upstream ``src/eval.py``'s "ORM" (Output Reward Model) equivalence judge. Like
-LooGLE it is a 0/1 **label-via-judge** benchmark — it exposes ``score`` /
-``score_batch`` / ``score_details`` + ``SCORER`` + ``GRADER_MODEL``, has **no
-``parse``**, and (unlike Loong) declares **no ``PERFECT_SCORE``**: the analysis CLI
-reports plain accuracy.
+upstream ``src/eval.py``'s "ORM" (Output Reward Model) equivalence judge. The
+verdict is the metric — this benchmark exposes ``score`` / ``score_batch`` /
+``score_details`` + ``SCORER`` + ``GRADER_MODEL``, extracts nothing from the answer
+beyond upstream's :func:`extract_answer`, and (unlike Loong) declares **no
+``PERFECT_SCORE``**, so plain accuracy is the metric to report.
 
 The upstream prompt is sent with the ``The answer is: xxx`` output contract intact
 (it is part of each row's baked instruction block — see ``loader._unbake``), so the
@@ -17,8 +17,7 @@ as ``eval.py`` does, before the equivalence check.
 ================ What changed from upstream's ORM judge ================
 The equivalence rubric (the first four lines of upstream ``GENERAL_ORM_PROMPT``) and
 the ``Problem / Answer 1 / Answer 2`` data block (``ORM_USER_TEMPLATE``) are
-VERBATIM from ``eval.py``. Two faithful re-seams, the same as Loong's / LooGLE's
-judge swaps:
+VERBATIM from ``eval.py``. Two faithful re-seams, the same as Loong's judge swaps:
   1. Transport: routed through the project's ``JUDGE_MODEL`` (``openai/gpt-5.4-mini``,
      ``evals/settings.py``) via ``evals/llm/chat.py`` — NOT upstream's
      deepseek-v3/DashScope.
@@ -45,16 +44,16 @@ from evals.settings import JUDGE_MODEL, canonical_model_id
 # Fixed for reproducibility — judging is best-effort deterministic.
 _JUDGE_SEED = 0
 
-# Identity + VERSION of this benchmark's scoring mechanism — recorded in
-# score.json's ``scorer`` and part of its cache key. BUMP it (e.g.
-# ``corpusqa-orm-judge-v2``) whenever the grading mechanism changes in a way that
-# can alter scores — the rubric, the ``Equivalence`` schema, or ``extract_answer``
-# — so cached score.json files auto-invalidate. A grader-MODEL change is caught
-# separately via ``GRADER_MODEL`` → score.json's ``scored_with``.
+# Identity + VERSION of this benchmark's scoring mechanism — exported so whatever
+# grades these logs can record it beside each grade and key its cache on it. BUMP it
+# (e.g. ``corpusqa-orm-judge-v2``) whenever the grading mechanism changes in a way
+# that can alter scores — the rubric, the ``Equivalence`` schema, or
+# ``extract_answer`` — so already-cached grades auto-invalidate. A grader-MODEL
+# change is caught separately via ``GRADER_MODEL``.
 SCORER = "corpusqa-orm-judge"
 
-# The grader model score.json caches against (its ``scored_with``). Changing it
-# invalidates the cache — re-scoring re-pays the judge LLM.
+# The grader model a cached grade is keyed against. Changing it invalidates that
+# cache — re-scoring re-pays the judge LLM.
 GRADER_MODEL = JUDGE_MODEL
 
 # Canonical slug of the grader model, stamped on each ScoreResult's ``model`` field.
@@ -96,7 +95,7 @@ SYSTEM_PROMPT = (
 class Equivalence(BaseModel):
     # `explanation` is generated before `equivalent` so the judge commits to a
     # rationale first. `score()` returns only 0/1; `score_details` also surfaces
-    # this explanation into score.json's `rationale` (the deep-dive).
+    # this explanation in the ScoreResult's `rationale` (the deep-dive).
     explanation: str
     equivalent: bool
 
@@ -168,8 +167,8 @@ def score_details(
     Resolves the question + gold for every task in a single index pass, then fans
     the judge LLM calls out across a thread pool (default 50 workers). Each call hits
     ``JUDGE_MODEL`` (``openai/gpt-5.4-mini``) — this costs money. Returns one
-    :class:`ScoreResult` per input (the scoreboard's entry, carrying the judge's
-    explanation as its rationale).
+    :class:`ScoreResult` per input, carrying the judge's explanation as its
+    rationale.
 
     Raises ``ValueError`` if ``task_ids`` and ``answers`` differ in length, and
     ``KeyError`` if any task id is unknown.

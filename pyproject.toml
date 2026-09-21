@@ -8,7 +8,8 @@ license-files = ["LICENSE"]
 requires-python = ">=3.13"
 # Core runtime deps. With these, `pip install .` gives a working harness: the three
 # benchmark loaders, the grading LLM calls (the judges, via LiteLLM, inside `score`),
-# and the analysis CLI. Each baseline adds its own extra — see
+# and the shared baseline plumbing (`evals/llm`'s litellm seam + token accounting, plus
+# `evals/baselines/_common.py`). Each baseline adds its own extra — see
 # [project.optional-dependencies] below; the harness layer never imports them.
 dependencies = [
     "datasets>=3.0",
@@ -23,7 +24,9 @@ dependencies = [
 test = [
     "pytest>=8.0",
 ]
-# Notebook + plotting tooling.
+# Notebook + plotting tooling — not required by any code path here: this harness runs
+# baselines and writes `logs/`, and the scoring/plotting of those logs happens outside
+# this repo. Kept as a convenience for doing that analysis from a notebook.
 full = [
     "r3con-evaluation[test]",
     "ipykernel>=7.2.0",
@@ -93,8 +96,8 @@ memagent = [
 # seam + an OpenAI embedding seam + our own chunker, so the local model backends
 # (vllm/transformers/gritlm embedders + LLMs) are trimmed off the import path and NOT needed;
 # these are the deps the vendored graph/OpenIE/retrieval code + embedding stores pull at load:
-# `python-igraph` (the graph + PPR), `torch` (the synonym-edge KNN in utils/embed_utils —
-# already in our ecosystem via linearrag), `tiktoken` (our chunker + embed truncation),
+# `python-igraph` (the graph + PPR), `torch` (the synonym-edge KNN in
+# utils/embed_utils), `tiktoken` (our chunker + embed truncation),
 # `pandas`/`numpy`/`scipy` (the embedding stores + math), `filelock`/`packaging` (vendored
 # client utils). No dspy (the triple filter is a baked-prompt LLM call, not runtime dspy).
 hipporag = [
@@ -134,7 +137,7 @@ pythonpath = ["."]
 # The markers below gate tests that hit a real LLM (and so cost a few cents). They are
 # de-selected by default; run one with e.g. `pytest -m judge` / `-m structrag` / `-m arag`.
 markers = [
-    "judge: end-to-end test that calls the real LLM judge (LooGLE score())",
+    "judge: end-to-end test that grades an answer with a benchmark's real LLM judge (loong / corpusqa / dracula score())",
     "structrag: end-to-end test that runs the StructRAG baseline pipeline against the real model",
     "arag: end-to-end test that runs the A-RAG baseline (agent + tools + embeddings) against the real model",
     "readagent: end-to-end test that runs the ReadAgent baseline (paginate/gist/look-up) against the real model",

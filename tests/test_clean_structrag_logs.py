@@ -1,8 +1,8 @@
 """Tests for ``scripts/clean_structrag_logs.py``.
 
-Synthetic log trees only (no real runs). structrag is an inference-time baseline
-with no index store (like direct-llm), so this is the simple inference-only
-cleaner. These pin exactly which inference dirs are removed vs kept:
+Synthetic log trees only (no real runs). structrag restructures documents per task,
+so it has no index store, and this is the simple inference-only cleaner (no
+``_indices/`` layer). These pin exactly which inference dirs are removed vs kept:
 
 - interruption artifacts removed: ChildCrash, empty/unparseable error.json, a dir
   with neither manifest nor error (incomplete);
@@ -93,10 +93,10 @@ def test_unparseable_error_is_broken_and_removed(tmp_path) -> None:
 
 
 def test_only_touches_structrag_not_other_baselines(tmp_path) -> None:
-    graphrag = _mk(tmp_path / "loong" / "graphrag", "c1", _err("ChildCrash"))
-    direct = _mk(tmp_path / "loong" / "direct-llm", "c2", _err("ChildCrash"))
+    arag = _mk(tmp_path / "loong" / "arag", "c1", _err("ChildCrash"))
+    other = _mk(tmp_path / "loong" / "other-baseline", "c2", _err("ChildCrash"))
     clean_structrag_logs(tmp_path)
-    assert graphrag.exists() and direct.exists()  # other baselines are out of scope
+    assert arag.exists() and other.exists()  # other baselines are out of scope
 
 
 def test_benchmark_filter_limits_scope(tmp_path) -> None:

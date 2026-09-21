@@ -10,12 +10,13 @@ not a status board. Volatile specifics live elsewhere and are linked, not
 restated:
 
 - **Per-baseline deviation ledgers** → each `evals/baselines/<name>/PROVENANCE.md`
-  (or `NOTES.md` / `CHANGES.md`). When this doc says "vendored byte-for-byte" or
+  (`NOTES.md` for `claude_code`). When this doc says "vendored byte-for-byte" or
   "the one deviation is…", the authoritative list is there.
 
-If this file and the code disagree, the code is the lagging snapshot of intent
-in STATUS; if this file and STATUS disagree, STATUS wins. Keep measured numbers
-and open TODOs **out** of here so it can't drift.
+If this file and the code disagree, **the code wins** — this is prose *about* the
+code, not a spec the code owes anything to; and the authority on any single
+baseline's deviation from its upstream is the `PROVENANCE.md` sitting next to it.
+Score tables are kept **out** of here so it can't drift.
 
 ---
 
@@ -30,8 +31,9 @@ first; every baseline below is a variation on it.
   `get_task_answer` / `get_task_metadata` → `score` / `score_batch` /
   `score_details` (+ `SCORER` / `GRADER_MODEL`, and `PERFECT_SCORE` for the
   1–100 judges). The crucial discipline: **`get_task` returns named components**
-  (context, question, choices, instruction, docs/cases) — *never* an assembled
-  prompt. The benchmark owns the components; the baseline owns *composition*.
+  (instruction, question, docs — Dracula has no instruction, so it returns the
+  other two) — *never* an assembled prompt. The benchmark owns the components;
+  the baseline owns *composition*.
   `get_documents(task_id)` is the one that matters most for a retrieval baseline:
   it returns the document **set** to index, and for Loong/CorpusQA it is a
   per-instance multi-doc bundle.
@@ -56,8 +58,8 @@ first; every baseline below is a variation on it.
   arag): `inferences/{hash}/` for the model output, plus — for the one baseline
   that builds a reusable index (arag) — a shared `_indices/{hash}/` index store
   reused across runs. (2) *Flat one-folder-per-run, index-inside, **TOTAL** cost,
-  no-reuse* (readagent, raptor, rlm, codeact, claude-code, hipporag, memagent). Both are read
-  transparently by the analysis CLI.
+  no-reuse* (readagent, raptor, rlm, codeact, claude-code, hipporag, memagent). Both are
+  self-describing on disk under `logs/`, so whatever grades them later reads either.
 
 - **Cost is captured completely, never dropped.** Every token — index-build
   embeddings, query embeddings, reader/agent completions, recursive sub-calls —
@@ -89,7 +91,7 @@ defining principle is **"leave no document behind"**: each instance's evidence i
 one of them makes the answer wrong. That single property makes Loong
 **structurally hostile to retrieval** — any method that retrieves a *subset*
 drops documents and fails — so RAG baselines are expected **foils** here, and the
-gap versus the read-everything baseline is the *measurement*, not a bug. It is
+gap versus a method that reads everything is the *measurement*, not a bug. It is
 1,600 instances: EN 695 + ZH 905 (`get_task_ids(languages=…)` selects), across
 three domains (`paper` EN-only, `financial` EN+ZH, `legal` ZH-only), four task
 types of rising difficulty (`level` 1 Spotlight-Locating → 4 Chain-of-Reasoning),
@@ -156,7 +158,7 @@ Only **ReadAgent-P** is wired, because it is the only look-up variant upstream
 actually implements in code (ReadAgent-S is a prompt template with no
 implementation), so there is no variant flag. Despite "Agent" in the name it is a
 **fixed pipeline** with a couple of bounded LLM choices, not an open-ended
-autonomous loop — hence 📖, not 🤖. For Loong/CorpusQA bundles it paginates each
+autonomous loop — hence 📖, not 🤖. For a task's document bundle it paginates each
 document independently and pools the pages in document order (a page never spans
 two docs), with a CJK-aware word count so Chinese paginates correctly. Because the
 answer is built from gists plus a tiny full-text window, it is expected to be a
@@ -186,12 +188,12 @@ inject the litellm + OpenAI-embedding seams (RAPTOR ships only raw-openai client
 with **no vLLM path**, so the litellm seam *is* the vLLM connection); the
 summary/QA prompts are kept verbatim and its hardcoded `RANDOM_SEED=224`
 clustering is left untouched. Simple flat per-run-folder layout (the tree built
-fresh per run, **no reuse** — the maintainer's benchmarks have no doc-set overlap;
+fresh per run, **no reuse**, trading index reuse for one self-contained folder;
 TOTAL cost = every cluster summary + every embedding + the QA answer, in one
 number). A 🔍 retrieval **foil** on Loong (top-k node subset), but expected to be
 a *less severe* one than plain RAG — its higher tree levels summarize across
 clusters, preserving global context that a purely local retrieval
-drops. Supports **`loong` + `corpusqa`**. **Runs THINKING** (D10): the summary's
+drops. Supports **loong / corpusqa / dracula**. **Runs THINKING** (D10): the summary's
 ~100-token length control moves from the `max_tokens` cap (which a reasoning model
 spends on `reasoning_content` → empty summaries) to a prompt hint + a 32768 budget,
 with an empty-summary retry — so it's comparable on the same thinking model as every
@@ -212,14 +214,15 @@ per-subquestion knowledge from the structured form, and merges the final answer.
 the question doesn't benefit from a rigid structure, it keeps the raw text, i.e.
 plain RAG-style chunks.) That is many sequential LLM calls and **no persistent
 index** (each task's KB round-trips through an ephemeral temp dir). Because it
-restructures *every* document, it is excluded from shared-corpus benchmarks (restructuring a
-shared 2,978-doc corpus per claim is infeasible — that exclusion is the one
-Parked TODO in STATUS). Context-window handling is faithful to upstream's
+restructures *every* document, it only fits a benchmark whose per-question document
+set is small enough to rebuild: Loong and CorpusQA are per-instance bundles, and
+Dracula's shared corpus is only 46 documents; a large shared corpus would have to be
+restructured per query, which is infeasible. Context-window handling is faithful to upstream's
 *behavior* but a better implementation: oversized prompts are truncated-to-fit
 and answered **reactively only** (clip on a server length rejection, never via
 upstream's proactive gpt2/128K clip). Every internal call's full request/response
-is logged to `calls.json`. It is **already measured** (PROGRESS 2026-06-14):
-net-zero-to-negative versus a plain long-context call on Loong — it *wins* on
+is logged to `calls.json`. Measured on Loong, it comes out
+net-zero-to-negative versus a plain long-context call — it *wins* on
 `paper`/`Clustering` (graph structurization matches citation tasks) but
 *destroys* multi-hop `legal`/`ChainOfReasoning`, and its wins shrink once the
 model can think. The read on it: a reasoning crutch, because structuring is
@@ -245,7 +248,7 @@ tokenizer and fixed 128K). Its content-addressed index is **LLM-independent**
 model/seed — one index serves many completion models. A-RAG is the one baseline
 that **needs a tool-calling endpoint** (native on OpenAI; vLLM needs the
 tool-call parser enabled). Its actions are *retrieval tool calls*, not code —
-hence 🔍🤖, not 🐍🤖. Supports longbenchv2 / loong / corpusqa; behind the
+hence 🔍🤖, not 🐍🤖. Supports loong / corpusqa / dracula; behind the
 `evals[arag]` extra.
 
 ### 🐍 🤖 `codeact`
@@ -267,7 +270,7 @@ capture (verified to match smolagents' own token tally exactly), so it runs on
 JSON). Validated behavior: a capable coder acts on the `documents` offload
 immediately (`for doc in documents: print(doc[:2000])`), and scores jump with
 model capability (Loong EN 10 → 100 going from gpt-5.4-nano to a thinking Qwen).
-Supports loong / corpusqa; behind the light `evals[codeact]` extra.
+Supports loong / corpusqa / dracula; behind the light `evals[codeact]` extra.
 
 ### 🐍 🤖 `rlm`
 
@@ -285,8 +288,8 @@ plain vLLM with no tool-call parser. Token cost is captured **completely** at
 RLM's OpenAI-client boundary via a runtime monkeypatch
 (`OpenAIClient._track_cost`), because RLM's own `usage_summary` misses the tokens
 of recursive sub-call clients. Like CodeAct, it can programmatically scan every
-document → expected strong on multi-doc. Supports loong / corpusqa; behind the
-`evals[rlms]` extra.
+document → expected strong on multi-doc. Supports loong / corpusqa / dracula;
+behind the `evals[rlms]` extra.
 
 ### 🐍 🤖 `claude-code`
 
@@ -350,10 +353,12 @@ nodes, synonym + context edges), then answers via HippoRAG's own retrieve→read
 (query→triple linking + a recognition-memory triple filter + PPR over the graph → top-k passages
 → a reader LLM). Supports loong / corpusqa / dracula.
 
-**This baseline reverses two prior exclusions** ("no author long-doc chunk recipe →
-misrepresentation risk"): the maintainer greenlit our chunker at corpusqa 8000 / loong 3000 /
-dracula 3000 tok (corpusqa capped under OpenAI's 8,191 embed limit) — the load-bearing
-deviation, PROVENANCE D1. Upstream is vendored byte-for-byte (`ad30fc3`, MIT); one litellm seam
+**That chunker is the load-bearing deviation.** The authors specify no long-document recipe
+(HippoRAG's own corpora are pre-chunked ~100-token Wikipedia paragraphs), so splitting whole
+documents ourselves carries a real misrepresentation risk: corpusqa 8000 / loong 3000 /
+dracula 3000 tok (corpusqa capped under OpenAI's 8,191 embed limit) is a **sanctioned
+deviation**, not an upstream recipe — PROVENANCE D1.
+Upstream is vendored byte-for-byte (`ad30fc3`, MIT); one litellm seam
 drives every internal call (OpenIE + the filter — which uses NO runtime dspy, just a baked prompt
 — + the reader), an OpenAI embedding seam handles the index (usage captured), and the local-model
 backends are trimmed off the import path (torch kept for the synonym-edge KNN). A retrieval **foil**

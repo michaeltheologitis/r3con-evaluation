@@ -208,7 +208,7 @@ def test_verdict_encoding_round_trips(strict: int, lenient: int) -> None:
 
 
 def test_read_verdicts_rejects_foreign_or_missing_values() -> None:
-    """A pre-v6 score.json (parsed=None) or a label benchmark's parsed decodes to None."""
+    """A `parsed` that is absent, empty, or not in this benchmark's format decodes to None."""
     assert judge.read_verdicts(None) is None
     assert judge.read_verdicts("") is None
     assert judge.read_verdicts("D.") is None
@@ -300,9 +300,9 @@ def test_score_details_shape_is_the_shared_scoreresult(fake_judge) -> None:
 
 
 def test_score_json_payload_preserves_the_pair(fake_judge, tmp_path) -> None:
-    """The generic writer whitelists keys — assert the lenient grade survives anyway.
+    """A grade record carries a fixed key set — assert the lenient grade survives it anyway.
 
-    Mirrors the payload a grader builds from a manifest.
+    Mirrors the payload an external grader would persist from a manifest.
     """
     fake_judge("incorrect", "correct")
     (result,) = dracula.score_details(["death_toll"], ["an answer"])
@@ -337,7 +337,7 @@ def test_empty_answer_fails_both_without_a_paid_call(fake_judge) -> None:
 
 
 def test_scorer_id_bumped_for_the_dual_mechanism() -> None:
-    """A mechanism change must flip the score.json cache key."""
+    """A mechanism change must flip `SCORER` — the id a cached grade is keyed on."""
     assert dracula.SCORER == "dracula-judge-v9"
 
 

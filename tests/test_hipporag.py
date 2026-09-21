@@ -5,7 +5,7 @@ Fake-driven: ``litellm.completion`` is patched and the OpenAI embedder is stubbe
 query→triple linking → recognition filter → PPR → reader) with no network. Pins the
 chunker, the per-benchmark query assembly, the LLM/embedding seams, and ``run_one``'s
 per-passage OpenIE call graph + TOTAL-cost record. No marker — fake-driven, runs by
-default (like the linearrag/raptor tests)."""
+default (like the raptor tests)."""
 from __future__ import annotations
 
 import hashlib

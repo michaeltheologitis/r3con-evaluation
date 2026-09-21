@@ -1,9 +1,9 @@
 """Clean interrupted / crashed A-RAG logs so they re-run.
 
-The A-RAG analogue of ``clean_graphrag_logs`` — A-RAG, like graphrag, has a
-**content-addressed ``_indices/`` store** (per-task: ``chunks.json`` +
-``sentence_index.pkl`` + receipts) that direct-llm / structrag don't, so it needs
-the index-store layer on top of the shared inference-folder cleanup. Two layers
+A-RAG is the ONE baseline here with a **content-addressed ``_indices/`` store**
+(per-task: ``chunks.json`` + ``index/sentence_index.pkl`` + receipts) — structrag, the
+other content-addressed baseline, builds no index — so this is the one cleaner that
+needs an index-store layer on top of the shared inference-folder cleanup. Two layers
 (both shared via ``scripts._clean_common``):
 
 1. **Inference folders** (``{benchmark}/arag/inferences/{hash}/``) — identical to
@@ -97,7 +97,7 @@ def clean_arag_logs(
             kept_inferences += inf_kept
 
         # Index references of the surviving manifests (this tool never deletes a
-        # manifest). The ``_indices/`` cleanup is shared with the graphrag cleaner.
+        # manifest). The ``_indices/`` cleanup helpers live in ``scripts._clean_common``.
         referenced = referenced_index_hashes(inferences)
         idx_deleted, idx_kept, n_ref = clean_index_store(
             base_dir / "_indices", referenced,

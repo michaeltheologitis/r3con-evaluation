@@ -1,9 +1,9 @@
 """RLM token-usage + call capture seam.
 
 RLM (the ``rlms`` PyPI package) is **not vendored** — it's a normal dependency (the
-``evals[rlms]`` extra), and the maintainer's call is to ``uv add`` it rather than ship code
+``evals[rlms]`` extra), and the project's choice is to ``uv add`` it rather than ship code
 across. So there is no source to re-seam; instead we capture at RLM's LLM-client boundary at
-**runtime**, the same maintainer-approved monkeypatch pattern used elsewhere.
+**runtime**, the same sanctioned monkeypatch pattern used elsewhere in the harness.
 
 Why capture at the client class level (not ``result.usage_summary``): RLM aggregates usage on a
 per-completion ``LMHandler``, but recursive ``rlm_query`` sub-calls (and the depth>=max_depth

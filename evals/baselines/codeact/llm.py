@@ -6,7 +6,7 @@ smolagents is a normal dependency (the ``evals[codeact]`` extra), **not vendored
 Why a subclass (not the litellm callback): smolagents' ``LiteLLMModel`` routes every call through
 ``litellm.completion`` — so the project's ``usage_scope`` ``UsageLogger`` callback *would* see them
 — BUT the SYNC-completion callback path silently drops ~a third of records (see
-``evals/llm/usage.py``; this is why ``direct-llm`` reads ``response.usage`` directly), and a
+``evals/llm/usage.py``; this is why ``usage_envelope`` reads ``response.usage`` directly), and a
 ``CodeAgent`` run is many sequential SYNC calls. So we capture **deterministically** instead:
 ``LiteLLMModel.generate`` returns a ``ChatMessage`` whose ``.raw`` is the full litellm response, so
 we read ``response.usage`` per call (exact, never dropped) and accumulate the harness-standard
@@ -16,7 +16,7 @@ The model is otherwise **unchanged** — same litellm transport, so ``--model`` 
 ``--api-key`` and the project's provider prefixes behave identically to every other litellm-routed
 baseline; ``seed`` + a ``--config`` sampling preset are injected as model kwargs (applied to every
 completion, ``run.py``). The usage shape is byte-identical to ``usage_envelope`` / the callback (same
-``_usage_to_dict`` + ``_merge_numeric`` helpers), so the manifest and analysis CLI consume it
+``_usage_to_dict`` + ``_merge_numeric`` helpers), so the manifest and any reader of it consume it
 unchanged. See ``PROVENANCE.md``.
 """
 from __future__ import annotations
@@ -67,7 +67,7 @@ class CodeActModel(LiteLLMModel):
 
         raw = getattr(result, "raw", None)  # the full litellm ModelResponse
         usage_dict = _usage_to_dict(getattr(raw, "usage", None))
-        # Key the rollup on the model that actually produced the tokens (matches direct-llm's
+        # Key the rollup on the model that actually produced the tokens (matches
         # usage_envelope + the callback), falling back to the requested id.
         model_key = getattr(raw, "model", None) or self.model_id or "<unknown>"
 

@@ -1,16 +1,17 @@
 """Runner for the structrag baseline.
 
-    python -m evals.baselines.structrag --benchmark {loong,loogle,longbenchv2} [flags]
+    python -m evals.baselines.structrag --benchmark {loong,corpusqa,dracula} [flags]
 
 Self-contained: this runner owns its argparse, run-config, parent fan-out, and
 child-mode (one task per subprocess, for crash isolation). It shares only the
 small stateless mechanism in ``evals.baselines._common`` — there is no central
 runner that dispatches every baseline. StructRAG restructures documents per task,
-so (like direct-llm) there is no ``setup()`` and no index / search knobs.
+so there is no ``setup()`` phase and no index / search knobs.
 
-This file is harness PLUMBING (not vendored StructRAG code); it mirrors
-``direct_llm/runner.py``. The StructRAG-specific work lives in ``run.py`` (the
-connector) and ``upstream/`` (the vendored pipeline).
+This file is harness PLUMBING (not vendored StructRAG code); it writes the
+content-addressed ``inferences/{hash}/`` layout (as ``arag/runner.py`` does),
+minus the shared index store. The StructRAG-specific work lives in ``run.py``
+(the connector) and ``upstream/`` (the vendored pipeline).
 
 Failure policy (no infinite retries): each task runs in a child subprocess ONCE.
 On a caught ``run_one`` error the child writes ``error.json`` and exits cleanly; if
@@ -61,7 +62,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 def build_run_config(args: argparse.Namespace) -> dict:
     """The inference identity (what gets hashed). No retrieval/index knobs for
-    structrag — same shape as direct-llm.
+    structrag — just benchmark / baseline / model / seed.
 
     A ``--config`` preset folds BOTH its resolved ``completion_params`` (so the hash
     reflects exactly what was sent) AND its ``config_name`` (a readable label) into

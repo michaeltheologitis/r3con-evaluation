@@ -116,7 +116,8 @@ def test_scan_counts_manifest_or_error_as_done(tmp_path) -> None:
 
 # ============================================================
 # scan_completed_task_ids — resumption for the FLAT per-run-folder layout
-# (linearrag / readagent): config-scoped, reads task_id from the record itself
+# (readagent / rlm / codeact / hipporag / memagent / claude-code): config-scoped,
+# reads task_id from the record itself
 # ============================================================
 
 

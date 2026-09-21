@@ -18,8 +18,8 @@ returned in a fixed-seed shuffled order (``_CORPUS_ORDER_SEED`` — see ``_corpu
 
 Exposes the standard benchmark surface (``get_task_ids`` / ``get_task`` /
 ``get_documents`` / ``get_task_answer`` / ``get_task_metadata`` +
-``STARTER_FILTER``); scoring lives in ``judge.py`` (0/1 LLM judge, the LooGLE
-pattern).
+``STARTER_FILTER``); scoring lives in ``judge.py`` (an LLM judge, 0/1, run against
+both a strict and a lenient gold).
 """
 from __future__ import annotations
 

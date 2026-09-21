@@ -81,7 +81,8 @@ def test_callback_tallies_single_call_into_total() -> None:
 
 
 def test_callback_sums_multiple_calls_to_same_model() -> None:
-    """Critical for graphrag: one build = many calls to the same model."""
+    """Critical for an index build (a RAPTOR tree, HippoRAG's per-passage OpenIE):
+    one build = many calls to the same model."""
     with usage_scope() as usage:
         for _ in range(3):
             _on_litellm_success({"model": "openai/gpt-5.4-nano"}, _resp(100, 50, 150), 0, 1)
@@ -199,7 +200,7 @@ def test_scope_reset_on_exception() -> None:
 
 
 # ============================================================
-# Concurrent asyncio calls (graphrag's production pattern)
+# Concurrent asyncio calls (the scope's ContextVar must reach every async task)
 # ============================================================
 
 

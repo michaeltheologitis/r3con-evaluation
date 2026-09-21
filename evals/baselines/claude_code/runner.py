@@ -3,7 +3,7 @@
     python -m evals.baselines.claude_code --benchmark {loong,corpusqa} [flags]
 
 Flat per-run-folder logging (the rlm/readagent layout) + resumption. Runs **one task at a time**
-by default (``--max-workers 1`` — the maintainer's call for this baseline; bump it only if you know
+by default (``--max-workers 1`` — a deliberate choice for this baseline; bump it only if you know
 your Max rate limits can take it). Each task shells out to ``claude -p`` (see ``run.py``); auth is
 the logged-in Max subscription (the env's ``ANTHROPIC_API_KEY`` is popped for the CLI).
 

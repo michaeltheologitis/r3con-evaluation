@@ -1,7 +1,7 @@
 """Tests for ``scripts/clean_raptor_logs.py``.
 
 Synthetic log trees only (no real runs). RAPTOR uses the same flat layout as
-LinearRAG/ReadAgent/RLM: each run is ONE folder ``{benchmark}/raptor/{run_tag}/`` directly under
+ReadAgent/RLM/CodeAct: each run is ONE folder ``{benchmark}/raptor/{run_tag}/`` directly under
 the baseline dir (no ``inferences/`` level, no shared ``_indices/`` store), with the built
 ``tree.json`` inside it. So these pin: run folders are classified directly; a removed junk folder
 takes its tree with it; successful runs + genuine model failures are kept; other baselines' layouts
@@ -88,7 +88,7 @@ def test_all_errors_removes_real_keeps_manifest(tmp_path) -> None:
 def test_only_touches_raptor_not_other_baselines(tmp_path) -> None:
     base = tmp_path / "loong" / "raptor"
     _mk(base, "r_crash", _err("ChildCrash"))
-    other = tmp_path / "loong" / "linearrag"
+    other = tmp_path / "loong" / "other-baseline"
     other.mkdir(parents=True)
     (other / "error.json").write_text(json.dumps({"task_id": "t", "error_type": "ChildCrash"}))
     clean_raptor_logs(tmp_path)

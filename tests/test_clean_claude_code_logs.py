@@ -1,7 +1,7 @@
 """Tests for ``scripts/clean_claude_code_logs.py``.
 
 Synthetic log trees only (no real ``claude -p`` runs). claude-code uses the same flat layout as
-LinearRAG / ReadAgent / RLM / CodeAct: each task run is ONE folder
+ReadAgent / RLM / CodeAct: each task run is ONE folder
 ``{benchmark}/claude-code/{run_tag}/`` directly under the baseline dir (no ``inferences/`` level, no
 shared ``_indices/`` store), with the verbatim ``trajectory.jsonl`` stream INSIDE it. So these pin:
 run folders are classified directly; a removed junk folder takes its ``trajectory.jsonl`` with it;

@@ -2,10 +2,11 @@
 
 Loong is judge-only (no exact match). A judge model rates the model's answer
 **1–100** against the gold answer on two rubric criteria — *Accuracy &
-Hallucinations* and *Completeness*. Downstream metrics (computed by the analysis
-CLI) are **Avg Score** (mean rating) and **Perfect Rate** (fraction == 100).
+Hallucinations* and *Completeness*. The downstream metrics — computed outside this
+repo, from the saved logs — are **Avg Score** (mean rating) and **Perfect Rate**
+(fraction == 100).
 
-This mirrors ``loogle/judge.py``'s mechanics:
+The mechanics follow this repo's shared judge pattern:
 - the rubric is delivered to the project's ``JUDGE_MODEL`` (``openai/gpt-5.4-mini``,
   see ``evals/settings.py``) — NOT upstream's GPT-4;
 - structured output via ``chat.py``'s ``schema=`` (a Pydantic ``Rating``) means
@@ -52,17 +53,17 @@ from evals.settings import JUDGE_MODEL, canonical_model_id
 # Fixed for reproducibility — judging is best-effort deterministic.
 _JUDGE_SEED = 0
 
-# Identity + VERSION of this benchmark's scoring mechanism — recorded in
-# score.json's ``scorer`` and part of its cache key. BUMP it (e.g.
-# ``loong-judge-v2``) whenever the grading mechanism changes in a way that can
+# Identity + VERSION of this benchmark's scoring mechanism — exported so whatever
+# grades these logs can record it beside each grade and key its cache on it. BUMP it
+# (e.g. ``loong-judge-v2``) whenever the grading mechanism changes in a way that can
 # alter scores — the judge ``SYSTEM_PROMPT`` rubric or the ``Rating`` schema — so
-# cached score.json files auto-invalidate (same discipline as graphrag's
-# ``_INDEX_VERSION``). A grader-MODEL change is caught separately via
-# ``GRADER_MODEL`` → score.json's ``scored_with``.
+# already-cached grades auto-invalidate (the same discipline as a baseline's
+# ``_INDEX_VERSION``, e.g. ``evals/baselines/arag/run.py``). A grader-MODEL change is
+# caught separately via ``GRADER_MODEL``.
 SCORER = "loong-judge"
 
-# The grader model score.json caches against (its ``scored_with``). Changing it
-# invalidates the cache — re-scoring re-pays the judge LLM.
+# The grader model a cached grade is keyed against. Changing it invalidates that
+# cache — re-scoring re-pays the judge LLM.
 GRADER_MODEL = JUDGE_MODEL
 
 # Canonical slug of the grader model, stamped on each ScoreResult's ``model`` field.
@@ -75,9 +76,10 @@ _GRADER_SLUG = canonical_model_id(GRADER_MODEL)
 _WORST_SCORE = 1
 
 # Public marker: Loong scores on a continuous 1–100 rating, NOT 0/1 correctness.
-# The analysis CLI keys on this attribute to report Avg Score (mean rating) +
-# Perfect Rate (fraction == PERFECT_SCORE) instead of accuracy. 100 == "fully
-# meets the rubric" (the upstream full-marks rule).
+# Grading happens outside this repo: whatever reads these logs keys on this
+# attribute to report Avg Score (mean rating) + Perfect Rate (fraction ==
+# PERFECT_SCORE) instead of accuracy. 100 == "fully meets the rubric" (the upstream
+# full-marks rule).
 PERFECT_SCORE = 100
 
 
@@ -114,7 +116,7 @@ SYSTEM_PROMPT = (
 class Rating(BaseModel):
     # `rationale` is generated before `rating` so the judge commits to an
     # explanation first. `score()` returns only the rating (1–100); `score_details`
-    # also surfaces this rationale into score.json's `rationale` (the deep-dive).
+    # also surfaces this rationale in the ScoreResult's `rationale` (the deep-dive).
     rationale: str
     rating: int
 
@@ -207,8 +209,7 @@ def score_details(
     Resolves the judge question + gold for every task in a single dataset pass,
     then fans the judge LLM calls out across a thread pool (default 50 workers).
     Each call hits ``JUDGE_MODEL`` (``openai/gpt-5.4-mini``) — this costs money.
-    Returns one :class:`ScoreResult` per input (the scoreboard's entry, carrying
-    the judge's rationale).
+    Returns one :class:`ScoreResult` per input, carrying the judge's rationale.
 
     Raises ``ValueError`` if ``task_ids`` and ``answers`` differ in length, and
     ``KeyError`` if any task id is unknown.
@@ -241,8 +242,8 @@ def score_batch(
 def score(task_id: str, answer: str) -> int:
     """Returns the LLM judge's 1–100 rating of ``answer`` for ``task_id``.
 
-    NOT a 0/1 correctness flag — the analysis CLI averages these (Avg Score) and
-    counts the fraction == 100 (Perfect Rate). Single-item convenience wrapper
-    over :func:`score_details`. Hits a real LLM.
+    NOT a 0/1 correctness flag — these ratings are averaged (Avg Score) and their
+    fraction == 100 counted (Perfect Rate) by whatever grades the logs. Single-item
+    convenience wrapper over :func:`score_details`. Hits a real LLM.
     """
     return score_details([task_id], [answer])[0]["score"]

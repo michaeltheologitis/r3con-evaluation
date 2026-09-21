@@ -1,12 +1,12 @@
 """Claude Code baseline pipeline (v1, exploratory).
 
 Per task: materialize the document bundle as files in a temp dir OUTSIDE this repo, run
-``claude -p`` headless in that dir (locked to read/search/compute tools, web disabled), and parse
-the ``stream-json`` output — the full trajectory (saved to ``trajectory.jsonl``) plus a final
-``result`` message carrying the answer + TOTAL token usage + ``total_cost_usd``.
+``claude -p`` headless in that dir (Claude Code's default toolset minus web + ``AskUserQuestion``),
+and parse the ``stream-json`` output — the full trajectory (saved to ``trajectory.jsonl``) plus a
+final ``result`` message carrying the answer + TOTAL token usage + ``total_cost_usd``.
 
 Auth: we POP ``ANTHROPIC_API_KEY`` from the subprocess env on purpose, so the CLI falls back to the
-logged-in (Max subscription) auth — the maintainer's intent. Set the key back (or remove the pop)
+logged-in (Max subscription) auth — a deliberate choice. Set the key back (or remove the pop)
 to bill against the pay-per-token API instead.
 
 Env hygiene: ``_subprocess_env`` POPs ``ANTHROPIC_API_KEY`` (→ Max auth) AND scrubs the Claude-Code
@@ -42,8 +42,8 @@ _DEFAULT_MODEL = "claude-opus-4-8"
 _DEFAULT_EFFORT = "high"
 
 # Toolset = Claude Code's DEFAULT set (we do NOT pass ``--tools`` — that allowlist wrongly dropped
-# Glob/Grep), with web + ``AskUserQuestion`` removed via ``--disallowedTools`` (the maintainer's call:
-# "let Workflow exist; just take away web — whatever else Claude Code ships by default is fine"):
+# Glob/Grep), with web + ``AskUserQuestion`` removed via ``--disallowedTools`` (a deliberate choice:
+# let Workflow exist; just take away web — whatever else Claude Code ships by default is fine):
 #   - **web** (WebSearch/WebFetch): the Loong/CorpusQA sources are real public docs, so web access
 #     would be RETRIEVING the answer, not grounded reasoning.
 #   - **AskUserQuestion**: headless (`-p`) — there is no human to answer, so a call just wastes a turn.
@@ -70,8 +70,8 @@ _DISALLOWED_TOOLS = ["WebSearch", "WebFetch", "AskUserQuestion"]
 #   --strict-mcp-config + empty    : no MCP servers (no Gmail/Drive/Calendar &c.)
 #   --disable-slash-commands       : no slash-command skills
 # Verified: this keeps Max auth and removes plugins/MCP/hooks. (A few built-in managed skills still
-# LIST in ``init.skills``; ``Skill`` is kept in the toolset, so the agent CAN invoke them — the
-# maintainer's call.)
+# LIST in ``init.skills``; ``Skill`` is kept in the toolset, so the agent CAN invoke them — a
+# deliberate choice.)
 _ISOLATION_FLAGS = [
     "--setting-sources", "project",
     "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}',
@@ -289,8 +289,9 @@ def run_one(
     )
     return {
         "raw_answer": raw_answer,
-        # Harness-standard usage `{total, calls}` (the shared analysis/cost layer requires this shape
-        # to aggregate claude-code alongside the other baselines): token counts only, no USD,
+        # Harness-standard usage `{total, calls}` (the shape every baseline here emits, so whatever
+        # grades/aggregates these logs later — outside this repo — can put claude-code alongside the
+        # other baselines): token counts only, no USD,
         # `prompt_tokens` = the FULL input (fresh + cache-read + cache-creation) so cost is priced at
         # the full rate with NO cache discount — consistent with every other baseline. The CLI's RAW
         # per-model/session usage (and its cache-discounted dollar figure) is kept verbatim below.
@@ -309,7 +310,7 @@ def run_one(
             # iterations, timings, stop_reason) + `total_cost_usd` (Anthropic's CACHE-DISCOUNTED total —
             # kept for provenance, NOT the cost metric). `cli_init` carries the granted tools / skills /
             # plugins / mcp_servers / apiKeySource / memory_paths / version. (Both also appear in
-            # trajectory.jsonl; duplicated here for one-file access during analysis.)
+            # trajectory.jsonl; duplicated here for one-file access when these logs are read later.)
             "cli_result": result_msg,
             "cli_init": init_msg,
         },

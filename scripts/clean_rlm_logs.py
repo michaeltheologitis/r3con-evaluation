@@ -1,8 +1,8 @@
 """Clean RLM run folders — drop failed/interrupted runs and reclaim their disk.
 
-RLM uses the SAME simple no-reuse layout as LinearRAG/ReadAgent: each task run is ONE
+RLM uses the SAME simple no-reuse layout as ReadAgent/CodeAct: each task run is ONE
 self-contained folder ``logs/{benchmark}/rlm/{run_tag}/`` holding the ``manifest.json``
-(success) OR ``error.json`` (failure), ``calls.json``, ``score.json``, AND RLM's full
+(success) OR ``error.json`` (failure), ``calls.json``, AND RLM's full
 trajectory (the native ``RLMLogger`` ``.jsonl``, written live — every turn, code block, REPL
 output, and sub-call). There is **no ``inferences/`` subfolder and no shared
 ``_indices/`` store**; the runner **resumes** (skips tasks already done for the config).
@@ -17,8 +17,8 @@ that task.
 The per-folder classification is the SAME ``scripts._clean_common.classify_inference`` the other
 cleaners use. ``--all-errors`` also removes the genuine-failure folders; ``--max-iter`` ALSO
 removes *successful* runs that hit the iteration cap (``n_iterations >= max_iterations`` — the
-same judgment the analysis ⁺ view counts as a failure) so those capped tasks re-run; ``--dry-run``
-previews.
+shared ``_common.hit_step_cap`` judgment for a run that produced no genuine answer) so those
+capped tasks re-run; ``--dry-run`` previews.
 
     python scripts/clean_rlm_logs.py                  # all rlm benchmarks
     python scripts/clean_rlm_logs.py --benchmark loong
@@ -53,9 +53,9 @@ def _capped_max_iter(run_dir: Path) -> str | None:
     ``manifest.json`` shows the task EXHAUSTED its iteration budget
     (``n_iterations >= max_iterations``), else ``None``.
 
-    Uses the SHARED ``_common.hit_step_cap`` — the SAME judgment the analysis ⁺ view
-    counts as a failed prediction — so the cleaner and the report agree on what "capped"
-    means. A folder with no/unreadable ``manifest.json`` (an ``error.json`` run) returns
+    Uses the SHARED ``_common.hit_step_cap`` — the SAME judgment whatever grades these logs
+    later can key on — so the cleaner and any report agree on what
+    "capped" means. A folder with no/unreadable ``manifest.json`` (an ``error.json`` run) returns
     ``None`` (untouched here — the normal classification already handled it)."""
     mf = run_dir / "manifest.json"
     if not mf.exists():
@@ -78,7 +78,7 @@ def clean_rlm_logs(
     """Remove junk RLM run folders (and the trajectory each holds) under ``logs_dir``.
 
     Scans ``logs_dir/{benchmark}/rlm/{run_tag}/`` (every benchmark when ``benchmark`` is None).
-    Like LinearRAG/ReadAgent there is no ``inferences/`` level: the run folders are the baseline
+    Like ReadAgent/CodeAct there is no ``inferences/`` level: the run folders are the baseline
     dir's direct children, so the shared ``clean_inference_dirs`` is pointed straight at
     ``base_dir`` — each run folder is classified by its ``manifest.json`` / ``error.json`` exactly
     like an inference folder, and ``rmtree``-ing a junk one removes its trajectory too. Returns
@@ -87,7 +87,7 @@ def clean_rlm_logs(
     ``max_iter`` ADDITIONALLY removes *successful* run folders whose task exhausted its
     iteration budget (``n_iterations >= max_iterations`` — category ``"max_iter"``), so those
     capped tasks re-run (e.g. after raising ``--max-iterations``). Off by default; the cap
-    judgment is the shared ``_common.hit_step_cap`` the analysis ⁺ view uses.
+    judgment is the shared ``_common.hit_step_cap``.
     """
     benchmark_glob = _slug(benchmark) if benchmark else "*"
     deleted: list[tuple[Path, str]] = []

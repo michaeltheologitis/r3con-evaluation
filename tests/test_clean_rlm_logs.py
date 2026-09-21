@@ -1,6 +1,6 @@
 """Tests for ``scripts/clean_rlm_logs.py``.
 
-Synthetic log trees only (no real runs). RLM uses the same flat layout as LinearRAG/ReadAgent:
+Synthetic log trees only (no real runs). RLM uses the same flat layout as ReadAgent/RAPTOR:
 each run is ONE folder ``{benchmark}/rlm/{run_tag}/`` directly under the baseline dir (no
 ``inferences/`` level, no shared ``_indices/`` store), with RLM's trajectory inside it. So these
 pin: run folders are classified directly; a removed junk folder takes its trajectory with it;

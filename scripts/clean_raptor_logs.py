@@ -1,8 +1,8 @@
 """Clean RAPTOR run folders — drop failed/interrupted runs and reclaim their disk.
 
-RAPTOR uses the SAME simple no-reuse layout as LinearRAG/ReadAgent/RLM: each task run is ONE
+RAPTOR uses the SAME simple no-reuse layout as ReadAgent/RLM/CodeAct: each task run is ONE
 self-contained folder ``logs/{benchmark}/raptor/{run_tag}/`` holding the ``manifest.json``
-(success) OR ``error.json`` (failure), ``calls.json``, ``score.json``, the built ``tree.json``, a
+(success) OR ``error.json`` (failure), ``calls.json``, the built ``tree.json``, a
 live ``progress.json``, and — for the offline-embed phase — the ``embed.json`` + ``leaves.pkl``
 checkpoint. There is **no ``inferences/`` subfolder and no shared ``_indices/`` store**; the runner
 **resumes** (skips tasks already done for the config) but never reuses a tree.
@@ -13,7 +13,8 @@ transient-error run — while KEEPING successful runs (``manifest.json``) and th
 failures (``ContextWindowExceededError``). Removing a folder takes its ``tree.json`` / ``leaves.pkl``
 with it; clearing a junk/transient folder also lets resumption re-run that task.
 
-**Two raptor-specific phase-split safety rules** (mirror linearrag):
+**Two raptor-specific phase-split safety rules** (raptor is the one baseline here with a
+phase split, so these two rules live only in this cleaner):
 
 1. A phase-1 ``--phase embed`` checkpoint (``embed.json`` + ``leaves.pkl``, no manifest/error yet)
    would classify as ``"incomplete"`` junk by file presence — a ``keep_if`` rescue KEEPS it so
@@ -99,7 +100,7 @@ def clean_raptor_logs(
     """Remove junk RAPTOR run folders (and the tree/checkpoint each holds) under ``logs_dir``.
 
     Scans ``logs_dir/{benchmark}/raptor/{run_tag}/`` (every benchmark when ``benchmark`` is None).
-    Like LinearRAG/ReadAgent/RLM there is no ``inferences/`` level: the run folders are the baseline
+    Like ReadAgent/RLM/CodeAct there is no ``inferences/`` level: the run folders are the baseline
     dir's direct children, so the shared ``clean_inference_dirs`` is pointed straight at ``base_dir``
     — each run folder is classified by its ``manifest.json`` / ``error.json`` exactly like an
     inference folder, and ``rmtree``-ing a junk one removes its ``tree.json`` too. Phase-1 ``embed``

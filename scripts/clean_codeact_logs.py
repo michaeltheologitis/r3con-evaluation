@@ -1,16 +1,16 @@
 """Clean CodeAct run folders — drop failed/interrupted runs and reclaim their disk.
 
-CodeAct uses the SAME simple no-reuse layout as LinearRAG / ReadAgent / RLM: each task run is ONE
+CodeAct uses the SAME simple no-reuse layout as ReadAgent / RLM / Claude Code: each task run is ONE
 self-contained folder ``logs/{benchmark}/codeact/{run_tag}/`` holding the ``manifest.json``
-(success) OR ``error.json`` (failure), ``calls.json``, ``score.json``, AND the CodeAct trajectory
+(success) OR ``error.json`` (failure), ``calls.json``, AND the CodeAct trajectory
 (``trajectory.json``). There is **no ``inferences/`` subfolder and no shared ``_indices/`` store**.
 
 So this cleaner tidies the dir and **reclaims disk**: it removes JUNK run folders — a ``ChildCrash`` /
 empty-or-unparseable ``error.json`` / incomplete (neither manifest nor error, e.g. a run the child
 was killed mid-step) / transient-error run — while KEEPING successful runs (``manifest.json``) and
-the genuine model failures (``ContextWindowExceededError``, which the analysis CLI still counts in
-its ⁺ view). (Clearing a junk folder also lets that task re-run, since the runner resumes off the
-surviving manifests.)
+the genuine model failures (``ContextWindowExceededError``, which whatever grades these logs later
+still counts as a failed prediction). (Clearing a junk folder also lets that task re-run, since the
+runner resumes off the surviving manifest/error records.)
 
 The per-folder classification is the SAME ``scripts._clean_common.classify_inference`` the other
 cleaners use — a run folder is just an inference folder that happens to sit directly under the

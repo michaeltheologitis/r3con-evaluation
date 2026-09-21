@@ -9,16 +9,19 @@ look-up variant upstream implements in code (PROVENANCE.md D5); there is no vari
 SIMPLE, NO-INDEX-REUSE logging (the flat per-run-folder layout): each task
 run gets its OWN folder ``logs/{benchmark}/readagent/{run_tag}/`` holding EVERYTHING — the
 gist memory (``gist_memory.json``), the ``manifest.json`` (with the **TOTAL** cost —
-pagination + gisting + look-up + answer, one number), ``calls.json``, a live
+pagination + gisting + look-up + answer, one number), ``calls.json``, and a live
 ``progress.json`` (the task's current stage + per-stage counts while it runs — readagent
-is slow, so this lets you see where a task is mid-flight), and (at score
-time) ``score.json``. Nothing is content-addressed and no gist memory is shared — a
+is slow, so this lets you see where a task is mid-flight). Grading happens elsewhere: the
+raw answer is recorded here and a separate scoring repo reads ``logs/`` afterwards.
+Nothing is content-addressed and no gist memory is shared — a
 pending task always rebuilds its gist memory from scratch. The runner DOES resume, though
 (it skips tasks already completed for the same config — see ``runner.py``); resumption is
 about not re-RUNNING finished tasks, not about reusing any index.
 
-SUPPORTED_BENCHMARKS = {loong, corpusqa, longhealth, dracula} — per-instance multi-doc bundles (no
-shared corpus). Full deviation ledger: evals/baselines/readagent/PROVENANCE.md
+SUPPORTED_BENCHMARKS = {loong, corpusqa, dracula} — the task's ``get_documents`` bundle is
+pooled and paginated per task (loong/corpusqa hand out a per-instance bundle; dracula's
+46-doc corpus is the same for every question, but nothing is reused across runs). Full
+deviation ledger: evals/baselines/readagent/PROVENANCE.md
 """
 from __future__ import annotations
 
@@ -35,28 +38,27 @@ SUPPORTED_BENCHMARKS: frozenset[str] = frozenset({"loong", "corpusqa", "dracula"
 # ── Per-benchmark pagination/gist regime — selected AUTOMATICALLY by benchmark (PROVENANCE D10) ──
 # ReadAgent uses a fixed page SIZE (variable page count). The ORIGINAL regime (600/280/350, no gist
 # length clause) is right for docs in ReadAgent's validated range: Loong (~52–76K words → ~90–126
-# pages) AND LongHealth (~1.5K-word docs → a few pages). CorpusQA's ~370–420K-word instances are NOT
-# — at 600 they paginate to ~600–1,300 pages (~2,500 reasoning calls/task), so they get ×10 pages +
-# a 640-token gist hint (~125 pages). This used to be a manual pre-run flip of gist.py/prompts.py +
-# ``_RUN_VERSION``; it is now chosen per benchmark below (no editing, no footgun).
+# pages) AND Dracula (211k pooled tokens over 46 docs, 81k in the largest — the same order as
+# Loong's ~90k median instance; see ``_REGIMES`` below).
+# CorpusQA's ~370–420K-word instances are NOT — at 600 they paginate to ~600–1,300 pages (~2,500
+# reasoning calls/task), so they get ×10 pages + a 640-token gist hint (~125 pages). The regime is
+# chosen per benchmark below, never by editing a module-level default (no footgun).
 _ORIGINAL_REGIME = gist.Regime(word_limit=600, start_threshold=280, short_page_words=350,
-                               gist_token_hint=None)   # Loong (v2) + LongHealth
+                               gist_token_hint=None)   # Loong + Dracula (v2)
 _CORPUSQA_REGIME = gist.Regime(word_limit=6000, start_threshold=2800, short_page_words=3500,
                                gist_token_hint=640)    # CorpusQA (v4)
 _REGIMES: dict[str, gist.Regime] = {
     "loong": _ORIGINAL_REGIME,
     "corpusqa": _CORPUSQA_REGIME,
     # dracula: Loong's regime — matching token profile (211k pooled / 81k max doc
-    # vs Loong's median ~90k), per the STATUS TODO.
+    # vs Loong's median ~90k).
     "dracula": _ORIGINAL_REGIME,
 }
 
 # ``run_version`` LABELS which regime a run used — it lives in the manifest ``config`` and resumption
-# keys on it PER BENCHMARK (so runs of different regimes never mix). loong stays "v2" (its existing
-# runs used the original regime — they MUST stay valid) and corpusqa stays "v4" (its existing runs
-# used the CorpusQA regime — likewise). longhealth moves off "v4" (its old runs wrongly used the
-# CorpusQA regime — the 6000-word cap ≫ its ~1.5K-word docs collapsed every doc to ~1 page) onto "v2"
-# (the original regime it should have used) → those wrong runs are SUPERSEDED and re-run.
+# keys on it PER BENCHMARK (so runs of different regimes never mix). loong and dracula run the
+# original regime and are labelled "v2"; corpusqa runs the ×10 regime and is labelled "v4". The
+# labels are fixed, not sequential — changing one strands every run already recorded under it.
 _RUN_VERSIONS: dict[str, str] = {"loong": "v2", "corpusqa": "v4", "dracula": "v2"}
 
 
@@ -151,7 +153,7 @@ def _build_task(benchmark, task_id: str) -> str:
         instruction, question, _docs = benchmark.get_task(task_id)
         return f"{question}\n\n{instruction}"
     if name == "dracula":
-        # The bare question; the 45-doc corpus becomes the gist memory.
+        # The bare question; the 46-doc corpus becomes the gist memory.
         question, _docs = benchmark.get_task(task_id)
         return question
     raise ValueError(f"readagent has no task assembly for benchmark {name!r}")
@@ -170,7 +172,7 @@ def run_one(
     stage's LLM calls) + ``calls_full`` + a light ``trace``. Nothing is reused.
 
     The pagination/gist regime is selected AUTOMATICALLY from the benchmark (``_regime_for``) —
-    the original 600-word/no-clause regime for loong + longhealth, the ×10/640-token one for
+    the original 600-word/no-clause regime for loong + dracula, the ×10/640-token one for
     corpusqa (PROVENANCE D10). No global to flip."""
     from evals.baselines.readagent.llm import ReadAgentLLM
 
@@ -195,7 +197,8 @@ def run_one(
     # Inner-task concurrency for pagination (across docs) + gisting (across pages). It rides in
     # litellm_kwargs (a runtime channel) — NOT run_config — on purpose: it's a pure throughput knob
     # (output is order-preserved + identical), so it must NOT split the config identity that
-    # resumption + the analysis group by, and existing sequential runs stay resumable under it.
+    # resumption — and anything that groups these logs later — keys on, and existing sequential
+    # runs stay resumable under it.
     gist_workers = int(litellm_kwargs.get("gist_workers", 1))
 
     # (1)+(2) Build the gist memory (pooled multi-doc pagination → gisting), persist it.

@@ -4,15 +4,16 @@ run on whole-document benchmarks).
 HippoRAG ships NO chunker: ``index(docs)`` treats each element of ``docs`` as one
 passage and runs a per-passage OpenIE (NER + triple extraction) LLM pass. Its own
 datasets are pre-chunked ~100-token Wikipedia paragraphs. Our benchmarks supply whole
-large documents (SEC 10-Qs, court rulings, arXiv papers, discharge letters), so we
-must split them into passages ourselves — an author-unspecified choice (D1), the reason
-HippoRAG was previously excluded; the maintainer greenlit these sizes.
+large documents (financial reports, court judgments, research papers, 19th-century
+journals and letters), so we must split them into passages ourselves — a choice the
+authors never specify, so these sizes are a sanctioned deviation (PROVENANCE D1), not
+an upstream recipe.
 
 Per-benchmark token sizes (``CHUNK_SIZES``), chosen to keep the OpenIE-call count
 tractable while staying under the OpenAI embedder's 8,191-token cap:
   * corpusqa    → 8,000  (capped under the embed limit; ≈ ⌈corpus/8000⌉ passages/task)
   * loong       → 3,000
-  * dracula     → 3,000  (Loong's value — matching token profile, per the STATUS TODO)
+  * dracula     → 3,000  (Loong's value — matching token profile)
 
 A passage never spans two documents (each document is split independently, then the
 passages are pooled) — so the graph's passage nodes stay document-scoped, as in

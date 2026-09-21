@@ -16,9 +16,9 @@ onto the harness:
   prompts/default.txt + max_loops/budget    faithful config (default.txt; max_loops=15;
                                             DYNAMIC per-model budget — model_budget)
 
-SUPPORTED_BENCHMARKS = {longbenchv2, loong, corpusqa, longhealth, dracula} — all per-task doc-sets (no
+SUPPORTED_BENCHMARKS = {loong, corpusqa, dracula} — all per-task doc-sets (no
 shared corpus), so there is no ``setup()``; each task's documents are chunked + indexed
-on demand into a content-addressed ``_indices/{index_hash}/`` (a content-addressed index store). The
+on demand into a content-addressed ``_indices/{index_hash}/`` store. The
 index is LLM-INDEPENDENT (chunking + embedding are deterministic, no completion calls),
 so ``index_hash`` folds only the doc-set fingerprint + embedding model + chunker /
 index versions — NOT the completion model, seed, or sampling (those vary the inference,
@@ -63,7 +63,7 @@ def run_one(
 
     Returns the harness record — purely the model's output + index_ref + usage +
     the full call trace (``calls_full`` → ``calls.json``) + a light ``trace``. Grading
-    (the Loong 1–100 judge / longbenchv2 parse-then-match) is deferred to score time.
+    (the benchmark's LLM judge) happens outside this repo, in whatever reads these logs.
     """
     from evals.baselines.arag.chunker import CHUNKER_VERSION
     from evals.baselines.arag.embedding import OpenAIEmbedder, OpenAISemanticSearchTool
@@ -135,7 +135,7 @@ def run_one(
 
 
 # ============================================================
-# Query assembly (mirrors graphrag/structrag _build_query exactly)
+# Query assembly — the task posed to the agent (the documents live in the index)
 # ============================================================
 
 
@@ -158,7 +158,7 @@ def _build_query(benchmark, task_id) -> str:
         instruction, question, _docs = benchmark.get_task(task_id)
         return f"{question}\n\n{instruction}"
     if name == "dracula":
-        # The bare question; the 45-doc corpus is chunked into the index.
+        # The bare question; the 46-doc corpus is chunked into the index.
         question, _docs = benchmark.get_task(task_id)
         return question
     raise ValueError(f"arag has no query assembly for benchmark {name!r}")
@@ -171,7 +171,7 @@ def _system_prompt() -> str:
 
 
 # ============================================================
-# Content-addressed per-task index store (mirrors graphrag)
+# Content-addressed per-task index store
 # ============================================================
 
 
@@ -201,8 +201,8 @@ def _index_dir(base_dir: Path, index_hash: str) -> Path:
 
 
 def _index_is_built(index_dir: Path) -> bool:
-    """Built TO COMPLETION = the two receipt files (written LAST) both exist — the same
-    completion sentinel graphrag uses, so a build that died mid-way is never reused."""
+    """Built TO COMPLETION = the two receipt files (written LAST) both exist — the
+    store's completion sentinel, so a build that died mid-way is never reused."""
     return all((index_dir / name).exists() for name in (_INDEX_USAGE_FILE, _INDEX_META_FILE))
 
 

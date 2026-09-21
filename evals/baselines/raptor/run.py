@@ -13,17 +13,17 @@ the tree (via our injected litellm/OpenAI seams) → ``answer_question`` retriev
 We pose the task through RAPTOR's own front door (``RetrievalAugmentation``), so the method
 is unchanged — only the model backends are seamed (PROVENANCE).
 
-SIMPLE NO-REUSE logging (the readagent/rlm layout, the maintainer's call): each
+SIMPLE NO-REUSE logging (the readagent/rlm layout, a deliberate choice): each
 task run gets its OWN folder ``logs/{benchmark}/raptor/{run_tag}/`` holding EVERYTHING — a
 readable ``tree.json`` (the built tree's structure + summaries), ``manifest.json`` (with the
-**TOTAL** cost — every build summary + every embedding + the QA answer, in one number),
-``calls.json``, and (at score time) ``score.json``. Nothing is content-addressed, no tree is
-reused; every run rebuilds its tree from scratch (the maintainer's benchmarks have no
-doc-set overlap, so reuse buys nothing). The runner DOES resume (skips tasks already done
-for the config).
+**TOTAL** cost — every build summary + every embedding + the QA answer, in one number), and
+``calls.json``. Nothing here grades a run: the separate scoring repo reads these folders.
+Nothing is content-addressed, no tree is reused; every run rebuilds its tree from scratch
+(index reuse is deliberately out of scope for this baseline). The runner DOES resume (skips
+tasks already done for the config).
 
-SUPPORTED_BENCHMARKS = {loong, corpusqa, longhealth, dracula} — per-instance multi-doc bundles (pooled into one
-text, then RAPTOR's own chunker + tree build).
+SUPPORTED_BENCHMARKS = {loong, corpusqa, dracula} — each task's document bundle is pooled into
+one text, then RAPTOR's own chunker + tree build.
 
 **Offline-embed / online-build split** (``--phase {all,embed,build}``): ``embed`` runs phase 1 — the
 OpenAI leaf embeddings (the heavy ~82% burst), NO completion LLM — and checkpoints them
@@ -68,9 +68,10 @@ _RETRIEVAL_TOP_K = 20         # collapse-tree nodes retrieved (was 10)
 _RETRIEVAL_MAX_TOKENS = 16000 # retrieved-context budget (was 3500): sized to the bigger nodes + reasoning reader
 
 # RAPTOR's PUBLISHED hyperparameters (the values the authors chose), selected by `--paper-hparams`
-# (run_config["paper_hparams"] is True). Right for docs in RAPTOR's validated regime (≤~78K tok, e.g.
-# LongHealth), where the D12 large-corpus re-scale degenerates — chunk=2000 yields too few leaves
-# (~5-12) to cluster, so no summary tree forms and retrieval covers ~everything (RAPTOR ≈ direct-llm).
+# (run_config["paper_hparams"] is True). Right for docs in RAPTOR's validated regime (≤~78K tok),
+# where the D12 large-corpus re-scale degenerates — chunk=2000 yields too few leaves
+# (~5-12) to cluster, so no summary tree forms and retrieval covers ~everything (the method
+# degenerates to answering over the whole pooled text).
 # Do NOT use on the 1M-token corpora: chunk=100 → ~10,000 leaves → thousands of summaries/task (exactly
 # the blowup D12 exists to prevent). Folded into the run config (hashed), so paper vs D12 runs never mix.
 _PAPER_HPARAMS = {
@@ -102,10 +103,10 @@ _PROGRESS_FILE = "progress.json"
 # Phase-1 (embed) checkpoint — the OFFLINE leaf embeddings (the heavy ~82% of all node embeds) that
 # phase-2 (build) consumes, split so the OpenAI embedding burst can run separately (and rate-limited)
 # from the vLLM summary phase. ``embed.json`` is the SMALL marker (task_id + config + query + the
-# embed usage) that resumption + the cleaner key on (mirrors linearrag's ``retrieval.json``);
-# ``leaves.pkl`` is the big leaf-Node data kept alongside (mirrors linearrag's ``index/``). Analysis
-# / scoring IGNORE both (they key on manifest/error), so a ``--phase all`` run (which never writes
-# them) is unaffected, and its manifest is byte-compatible with the pre-split one.
+# embed usage) that resumption + the cleaner key on; ``leaves.pkl`` is the big leaf-Node data kept
+# alongside. Neither is part of a task's RESULT — whatever grades these logs later keys on
+# manifest/error and ignores both — so a ``--phase all`` run (which never writes them) is
+# unaffected, and its manifest is byte-compatible with the pre-split one.
 _EMBED_FILE = "embed.json"
 _LEAVES_FILE = "leaves.pkl"
 
@@ -177,7 +178,7 @@ def _build_query(benchmark, task_id: str) -> str:
         instruction, question, _docs = benchmark.get_task(task_id)
         return f"{question}\n\n{instruction}"
     if name == "dracula":
-        # The bare question; the 45-doc corpus is pooled into the summary tree
+        # The bare question; the 46-doc corpus is pooled into the summary tree
         # (the D12 scale applies as for loong/corpusqa — similar token profile).
         question, _docs = benchmark.get_task(task_id)
         return question
@@ -185,10 +186,10 @@ def _build_query(benchmark, task_id: str) -> str:
 
 
 def _pool_documents(documents: list[str]) -> str:
-    """RAPTOR's ``add_documents`` takes ONE text; Loong is a per-instance multi-doc bundle.
-    Pool the docs into a single blob (they already carry their Loong titles) so RAPTOR's
-    own ~100-token chunker + tree build runs unmodified over the whole bundle (the
-    per-document-then-pool convention the other multi-doc baselines use)."""
+    """RAPTOR's ``add_documents`` takes ONE text; every wired benchmark hands us a multi-doc
+    bundle (Loong and CorpusQA per instance, Dracula the whole corpus). Pool the docs into a
+    single blob, blank-line separated in loader order, so RAPTOR's own chunker + tree build
+    runs unmodified over the whole bundle (the leaf size is ``_hparams``' ``chunk_tokens``)."""
     return "\n\n".join(documents)
 
 

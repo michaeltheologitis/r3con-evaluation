@@ -9,13 +9,14 @@ retries). Every ReadAgent stage (pagination, gisting, look-up, answer) calls
 ``complete(prompt)``.
 
 Deviations from upstream (also in PROVENANCE.md):
-  • ``max_tokens`` = **32768**, not upstream's 512: we evaluate REASONING models, and a
-    thinking model can spend the whole budget on ``reasoning_content`` before emitting
-    its answer → empty output (the same reason StructRAG/A-RAG bumped to 32768).
+  • **No generation cap.** Upstream pins ``max_tokens=512``; we send NO ``max_tokens`` at
+    all, letting the server fill the remaining window: we evaluate REASONING models, and a
+    thinking model can spend a small budget entirely on ``reasoning_content`` before
+    emitting its answer → empty output.
   • **No proactive truncation.** Upstream relies on the gist memory keeping prompts
     small. We send prompts as-is; an oversized prompt surfaces the server's
     ``ContextWindowExceededError``, which the runner records as a genuine model failure
-    (folded into the analysis ⁺ view) — faithful to ReadAgent, which does not truncate.
+    (an ``error.json``) — faithful to ReadAgent, which does not truncate.
   • Temperature is NOT pinned to upstream's 0.0 — it follows the served model/provider
     default unless a ``--config`` preset overrides it (the harness convention shared by
     structrag/arag, so the method is measured "as served").
@@ -33,8 +34,9 @@ from typing import Any
 from evals.llm.chat import litellm_chat_completion_full
 from evals.llm.usage import _merge_numeric, usage_envelope
 
-# Per-call generation budget. Upstream ships 512; we run reasoning models, which can
-# burn the budget on reasoning_content before answering. Matches StructRAG/A-RAG (32768).
+# Nominal per-call generation budget: RECORDED in each ``calls.json`` entry, but no longer
+# SENT (see ``complete``) — upstream's 512 is burned on reasoning_content before the model
+# answers, so we let the server fill the remaining window instead.
 _MAX_TOKENS = 32768
 
 

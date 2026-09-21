@@ -64,7 +64,7 @@ def test_prompt_builders_dont_break_on_braces_in_content() -> None:
 def test_gisting_prompt_no_hint_is_byte_exact_loong_v2() -> None:
     # The ORIGINAL ReadAgent / Loong-v2 gist prompt carries NO "should be in N tokens" length
     # clause. Loong's 1542 existing runs used exactly this — pin it byte-for-byte so a future
-    # edit can't silently change what a resumed / re-measured Loong (or LongHealth) run sends.
+    # edit can't silently change what a resumed / re-measured Loong run sends.
     assert prompts.gisting_prompt("PASSAGE") == (
         "\nPlease shorten the following passage.\n"
         "Just give me a shortened version. DO NOT explain your reason.\n\n"
@@ -425,7 +425,7 @@ def test_run_one_pipeline_and_per_run_folder_logging(tmp_path, monkeypatch) -> N
                          {"model": "openai/gpt-5.4-nano", "api_base": None, "api_key": None})
 
     assert rec["raw_answer"] == "The answer is: Paris."
-    # No content-addressed index (linearrag-style): the record carries no index_ref.
+    # No content-addressed index (the flat per-run layout): the record carries no index_ref.
     assert "index_ref" not in rec
     # The gist memory is persisted INSIDE the run folder.
     memory = json.loads((tmp_path / "gist_memory.json").read_text())
@@ -541,7 +541,7 @@ def test_no_lookup_method_flag() -> None:
         ra_runner.build_arg_parser().parse_args(["--benchmark", "loong", "--lookup-method", "parallel"])
 
 
-# --- resumption: a re-run must NOT redo finished tasks (the bug the maintainer caught) ---
+# --- resumption: a re-run must NOT redo finished tasks (a real bug, pinned here) ---
 
 
 def _patch_runner_for_resumption(tmp_path, monkeypatch):

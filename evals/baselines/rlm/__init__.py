@@ -4,7 +4,7 @@ RLM (Recursive Language Models, alexzhang13/rlm, arXiv 2512.24601) is a task-agn
 paradigm: instead of stuffing a long context into the prompt, the context is offloaded as a
 ``context`` **variable in a Python REPL**, and a root LM writes ``repl`` code (CodeAct — not JSON
 tool-calling) to examine/decompose it and launch recursive sub-LM calls (``llm_query`` /
-``rlm_query``). We pose Loong/CorpusQA via RLM's canonical front door: the document bundle becomes
+``rlm_query``). We pose each benchmark via RLM's canonical front door: the document bundle becomes
 the REPL ``context`` variable, the composed task/question becomes the ``root_prompt`` the root LM sees.
 
 RLM is a normal dependency (the ``evals[rlms]`` extra; ``uv add``-ed, not vendored). It is
@@ -15,7 +15,7 @@ alongside as the rich CodeAct log. Deviation ledger: ``PROVENANCE.md``.
 
 SIMPLE NO-REUSE logging (the readagent/rlm layout): one self-contained folder per task run,
 the trajectory inside it, the TOTAL token cost in the manifest. The runner resumes (skips tasks
-already done for the config). Wired for Loong + CorpusQA.
+already done for the config). Wired for Loong + CorpusQA + Dracula.
 """
 from evals.baselines.rlm.run import SUPPORTED_BENCHMARKS, run_one
 

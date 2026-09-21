@@ -1,9 +1,9 @@
-"""Loong benchmark loader (English-only, extended multi-doc QA).
+"""Loong benchmark loader (EN + ZH, extended multi-doc QA).
 
-Like LooGLE, Loong QA is free-form generation graded by an LLM judge, so this
-module deliberately omits `get_task_choices` and `parse`. Scoring is the judge's
-1–100 rating — see `score` / `score_batch` (and `PERFECT_SCORE`, the marker the
-analysis CLI keys on to report Avg Score + Perfect Rate instead of accuracy).
+Loong QA is free-form generation graded by an LLM judge: there are no answer
+choices to expose and nothing to parse out of an answer. Scoring is the judge's
+1–100 rating — see `score` / `score_batch` (and `PERFECT_SCORE`, the marker telling
+whatever grades these logs to report Avg Score + Perfect Rate instead of accuracy).
 """
 
 from . import download_docs  # the doc-pool fetch script, exposed as `loong.download_docs`

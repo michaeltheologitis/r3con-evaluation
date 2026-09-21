@@ -22,7 +22,7 @@ with the two delimiter sets extended to the full-width CJK equivalents, so Chine
 splits into ~100-token leaves like English does. It is a strict **superset** — ASCII text
 contains none of these code points, so for EN/financial documents the output is
 **byte-identical** to upstream (verified in tests); only CJK text chunks differently (i.e.
-correctly). Mirrors ReadAgent's "CJK-aware pagination" deviation (PROGRESS 2026-06-15).
+correctly). Mirrors ReadAgent's CJK-aware pagination (``evals/baselines/readagent/gist.py``).
 
 Full deviation ledger: evals/baselines/raptor/PROVENANCE.md (D9).
 """

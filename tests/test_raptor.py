@@ -5,7 +5,7 @@ patched ``litellm``, the connector helpers are pinned directly, and ``run_one`` 
 vendored RAPTOR pipeline (tree build + collapse-tree retrieval + QA) with fake litellm responses —
 on a SMALL document so RAPTOR's clustering guard (``len(nodes) <= reduction_dimension+1``) skips
 UMAP/GMM, keeping the test deterministic + fast while still exercising leaf creation, retrieval,
-and the TOTAL-cost record. Requires the ``evals[raptor]`` extra installed (like test_linearrag).
+and the TOTAL-cost record. Requires the ``evals[raptor]`` extra installed.
 """
 from __future__ import annotations
 

@@ -8,8 +8,9 @@ prompting stages faithfully. Every template below is copied **verbatim** from an
 upstream artifact; the source of each, and the few deliberate adaptations for our
 free-form benchmarks, are recorded in ``PROVENANCE.md``.
 
-Loong and CorpusQA are FREE-FORM QA (not QuALITY's multiple-choice), so the
-lookup/answer prompts use the paper's free-form templates:
+All three benchmarks here (Loong, CorpusQA, Dracula) are FREE-FORM generation graded by an
+LLM judge, not QuALITY's multiple-choice, so the lookup/answer prompts use the paper's
+free-form templates:
   - pagination + gisting  ← ``app.py`` (the generic, runnable QuALITY demo text)
   - look-up + answer      ← the paper's NarrativeQA free-form templates (notebook)
 
@@ -46,7 +47,7 @@ Passage:
 # (2) Memory Gisting — two forms, selected per benchmark by the active Regime's
 #     ``gist_token_hint`` (PROVENANCE D3 + D10):
 #       • NO length clause — upstream app.py `prompt_shorten_template` VERBATIM. This is what
-#         Loong ran as v2 (and what LongHealth now runs); pinned byte-for-byte by a test.
+#         Loong and Dracula run as v2; pinned byte-for-byte by a test.
 #       • WITH a "should be in {} tokens" clause — the notebook's length-capped gisting variant
 #         (same authors), used for CorpusQA (v4, hint 640) whose ×10 pages must gist to a bounded
 #         size. Slots are POSITIONAL {} — the substituted values (the token count, the page text)

@@ -9,7 +9,7 @@ loop / tools / prompts run UNMODIFIED, but calls route through ``litellm.complet
 (vLLM / OpenAI / Ollama, with provider routing, ``--seed``, ``--config`` sampling, and
 ``num_retries`` transport retries).
 
-The maintainer green-lit this re-seam: it changes the TRANSPORT, not A-RAG's method
+This re-seam is a sanctioned deviation: it changes the TRANSPORT, not A-RAG's method
 (the agent still decides every tool call and when to answer). ``cost`` is best-effort
 from litellm and unused by the harness (which prices via litellm on the captured token
 counts); A-RAG's own ``PRICING`` table is dropped. Usage is accumulated DETERMINISTICALLY

@@ -14,7 +14,7 @@ deviation is recorded in ``PROVENANCE.md``. Behind the ``evals[memagent]`` extra
 
 SIMPLE NO-REUSE logging (the readagent/rlm layout): one self-contained folder per task run
 holding the memory trajectory, the TOTAL cost in the manifest, no reuse; the runner resumes
-(skips tasks already done for the config). Wired for Loong + CorpusQA (NOT MINTEval yet).
+(skips tasks already done for the config). Wired for Loong, CorpusQA and Dracula.
 """
 from .run import SUPPORTED_BENCHMARKS, run_one
 

@@ -1,10 +1,15 @@
 """Per-run LLM call capture via a LiteLLM CustomLogger.
 
-Both baselines (and any future ones) ultimately call LiteLLM — `direct-llm`
-directly, `graphrag` via its own `graphrag_llm` layer. Hooking
-`litellm.callbacks` with a ``CustomLogger`` is the one place that observes
-every LLM call either baseline makes (sync + async, completion + embedding),
-so this module captures the calls uniformly.
+Most baselines here reach their LLM through LiteLLM, whether they call it
+directly or through a vendored library. Hooking `litellm.callbacks` with a
+``CustomLogger`` is the only baseline-agnostic place that CAN see every such call
+(sync + async, completion + embedding) without touching the baseline's own code, so
+this module captures the calls uniformly — but that hook is LOSSY for sync completions
+(``usage_envelope`` below has the measured number), which is exactly why the
+per-baseline seams exist. Every baseline runner opens a ``usage_scope`` around its
+``run_one`` as the harness-wide fallback; a baseline whose own LLM/embedding seam
+accumulates usage deterministically hands that record back instead, and the runner
+prefers it.
 
 We save the per-call **token cost** — not prompts or responses. For each
 successful call we record ``{model, usage}``, where ``usage`` is the full
@@ -35,11 +40,13 @@ Usage::
         run_baseline()      # any LLM activity (sync or async, asyncio)
     # `usage` is now {"total": {...}, "calls": [...]}
 
-The scope is per-task (the runner opens one around each `run_one`) and per-index
-build (graphrag opens one around `build_index`, persisted to
-`_indices/<hash>/index_usage.json`). Per-call records are delivered to the
-active scope through `contextvars.ContextVar`, which propagates across
-`asyncio.run` and async tasks (graphrag's internal calls are all async).
+The scope is per-task: the runner opens one around each `run_one`. Index-build cost
+is accounted separately where a baseline keeps a shared index store — arag persists
+its build embeddings to `_indices/<hash>/index_usage.json` so a reused index is not
+re-counted per task. Per-call records are delivered to the active scope through
+`contextvars.ContextVar`, which propagates across `asyncio.run` and async tasks, so
+the async callback (`async_log_success_event`) lands in the same accumulator as the
+sync one.
 """
 from __future__ import annotations
 
@@ -83,8 +90,9 @@ def usage_scope() -> Iterator[RunUsage]:
     and folded into the per-model ``total`` rollup.
 
     Nested scopes are isolated (each opens its own dict; the outer scope does
-    NOT see the inner scope's calls) — the right thing for test isolation and
-    for graphrag's index-build-vs-query split.
+    NOT see the inner scope's calls) — the right thing for test isolation, and it
+    keeps a scope opened around one phase (say an index build) from also landing in
+    an enclosing per-task scope.
     """
     acc: RunUsage = {"total": {}, "calls": []}
     token = _current_accumulator.set(acc)
@@ -107,14 +115,16 @@ def total_tokens(usage: RunUsage) -> int:
 def usage_envelope(response: Any) -> RunUsage:
     """Build a ``{total, calls}`` usage record from ONE response object, directly.
 
-    The DETERMINISTIC alternative to ``usage_scope`` for a baseline that holds the
-    response in hand (e.g. ``direct-llm``'s single ``litellm.completion``): litellm
-    fires its success callback off the scope's thread / after the call returns for
-    SYNC completions, so the scope-based capture drops ~a third of records (measured
-    live; even serially). Reading ``response.usage`` here is exact and always
-    present. Output shape is identical to a ``usage_scope`` that saw exactly one
-    call (``total[model]`` rollup with ``num_calls`` + ``calls[0]``), so the manifest
-    and any reader of it consume it unchanged. The model key is ``response.model``
+    The DETERMINISTIC alternative to ``usage_scope`` for a caller that holds the
+    response in hand (a single ``litellm.completion``): litellm fires its success
+    callback off the scope's thread / after the call returns for SYNC completions, so
+    the scope-based capture drops ~a third of records (measured live; even serially).
+    Reading ``response.usage`` here is exact and always present. That is why the
+    per-baseline LLM / embedding seams accumulate one envelope per call and hand the
+    result back, rather than relying on the callback. Output shape is identical to a
+    ``usage_scope`` that saw exactly one call (``total[model]`` rollup with
+    ``num_calls`` + ``calls[0]``), so the manifest and any reader of it consume it
+    unchanged. The model key is ``response.model``
     (what actually produced the tokens — matches what the callback records).
 
     Returns an empty envelope (``{"total": {}, "calls": []}``) if the response

@@ -1,6 +1,6 @@
 """Tests for ``scripts/clean_readagent_logs.py``.
 
-Synthetic log trees only (no real runs). ReadAgent uses the same flat layout as LinearRAG: each
+Synthetic log trees only (no real runs). ReadAgent uses the same flat layout as RLM/RAPTOR: each
 run is ONE folder ``{benchmark}/readagent/{run_tag}/`` directly under the baseline dir (no
 ``inferences/`` level, no shared ``_indices/`` store), with the gist memory INSIDE it
 (``gist_memory.json``). So these pin: run folders are classified directly; a removed junk folder

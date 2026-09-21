@@ -21,10 +21,11 @@ smolagents' ``LiteLLMModel`` (subclassed in ``llm.py`` for deterministic, comple
 
 SIMPLE NO-REUSE logging (the readagent/rlm layout): each task run gets its OWN folder
 ``logs/{benchmark}/codeact/{run_tag}/`` holding the CodeAct trajectory (``trajectory.json`` — every
-step's thought / code / observation), ``manifest.json`` (the TOTAL tokens across all steps),
-``calls.json``, and (at score time) ``score.json``.
+step's thought / code / observation), ``manifest.json`` (the TOTAL tokens across all steps) and
+``calls.json``. Nothing here grades — a run records the raw answer and its cost, and the separate
+scoring repo reads these logs.
 
-SUPPORTED_BENCHMARKS = {loong, corpusqa, longhealth, dracula}. Deviation ledger: evals/baselines/codeact/PROVENANCE.md
+SUPPORTED_BENCHMARKS = {loong, corpusqa, dracula}. Deviation ledger: evals/baselines/codeact/PROVENANCE.md
 """
 from __future__ import annotations
 
@@ -66,7 +67,7 @@ def _build_task(benchmark, task_id: str) -> str:
         instruction, question, _docs = benchmark.get_task(task_id)
         return f"{question}\n\n{instruction}"
     if name == "dracula":
-        # The bare question; the whole 45-document corpus goes into the
+        # The bare question; the whole 46-document corpus goes into the
         # `documents` sandbox variable, dropped from the task string.
         question, _docs = benchmark.get_task(task_id)
         return question
