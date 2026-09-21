@@ -115,7 +115,7 @@ python -m evals.benchmarks.corpusqa.download_data --set 1m
 
 
 # ============ baselines ============
-# Omitting --limit runs the whole benchmark: 1,600 Loong tasks, 329 CorpusQA.
+# Omitting --limit runs the whole benchmark: 1,600 Loong tasks, 329 CorpusQA, 1 Dracula.
 # Re-running resumes, so any of these can be interrupted and restarted.
 
 # ReadAgent on Loong
@@ -125,6 +125,11 @@ python -m evals.baselines.readagent --benchmark loong \
 
 # ReadAgent on CorpusQA
 python -m evals.baselines.readagent --benchmark corpusqa \
+  --model Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY"
+
+# ReadAgent on Dracula
+python -m evals.baselines.readagent --benchmark dracula \
   --model Qwen/Qwen3.5-35B-A3B \
   --base-url http://localhost:8555/v1 --api-key "$KEY"
 
@@ -138,6 +143,11 @@ python -m evals.baselines.structrag --benchmark corpusqa \
   --model Qwen/Qwen3.5-35B-A3B \
   --base-url http://localhost:8555/v1 --api-key "$KEY"
 
+# StructRAG on Dracula
+python -m evals.baselines.structrag --benchmark dracula \
+  --model Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY"
+
 # A-RAG on Loong   (needs the tool-call parser, which the serve command above enables)
 python -m evals.baselines.arag --benchmark loong \
   --model Qwen/Qwen3.5-35B-A3B \
@@ -145,6 +155,11 @@ python -m evals.baselines.arag --benchmark loong \
 
 # A-RAG on CorpusQA
 python -m evals.baselines.arag --benchmark corpusqa \
+  --model Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY"
+
+# A-RAG on Dracula
+python -m evals.baselines.arag --benchmark dracula \
   --model Qwen/Qwen3.5-35B-A3B \
   --base-url http://localhost:8555/v1 --api-key "$KEY"
 
@@ -158,6 +173,11 @@ python -m evals.baselines.codeact --benchmark corpusqa \
   --model Qwen/Qwen3.5-35B-A3B \
   --base-url http://localhost:8555/v1 --api-key "$KEY"
 
+# CodeAct on Dracula
+python -m evals.baselines.codeact --benchmark dracula \
+  --model Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY"
+
 # RLM on Loong
 python -m evals.baselines.rlm --benchmark loong \
   --model Qwen/Qwen3.5-35B-A3B \
@@ -165,6 +185,11 @@ python -m evals.baselines.rlm --benchmark loong \
 
 # RLM on CorpusQA
 python -m evals.baselines.rlm --benchmark corpusqa \
+  --model Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY"
+
+# RLM on Dracula
+python -m evals.baselines.rlm --benchmark dracula \
   --model Qwen/Qwen3.5-35B-A3B \
   --base-url http://localhost:8555/v1 --api-key "$KEY"
 
@@ -178,6 +203,11 @@ python -m evals.baselines.raptor --benchmark corpusqa \
   --model Qwen/Qwen3.5-35B-A3B \
   --base-url http://localhost:8555/v1 --api-key "$KEY"
 
+# RAPTOR on Dracula
+python -m evals.baselines.raptor --benchmark dracula \
+  --model Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY"
+
 # HippoRAG on Loong   (call-heavy: ~2 calls per passage, no reuse. Add --limit N for a subset)
 python -m evals.baselines.hipporag --benchmark loong \
   --model Qwen/Qwen3.5-35B-A3B \
@@ -185,6 +215,11 @@ python -m evals.baselines.hipporag --benchmark loong \
 
 # HippoRAG on CorpusQA
 python -m evals.baselines.hipporag --benchmark corpusqa \
+  --model Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY"
+
+# HippoRAG on Dracula
+python -m evals.baselines.hipporag --benchmark dracula \
   --model Qwen/Qwen3.5-35B-A3B \
   --base-url http://localhost:8555/v1 --api-key "$KEY"
 
@@ -197,6 +232,11 @@ python scripts/r3con/loong/run.py --all --inference both \
 
 # R3Con on CorpusQA
 python scripts/r3con/corpusqa/run.py --inference both \
+  --model hosted_vllm/Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY" --workers 20
+
+# R3Con on Dracula
+python scripts/r3con/dracula/run.py --inference both \
   --model hosted_vllm/Qwen/Qwen3.5-35B-A3B \
   --base-url http://localhost:8555/v1 --api-key "$KEY" --workers 20
 
@@ -215,8 +255,13 @@ python -m evals.baselines.memagent --benchmark loong \
 python -m evals.baselines.memagent --benchmark corpusqa \
   --base-url http://localhost:8556/v1 --api-key "$KEY"
 
+# MemAgent on Dracula
+python -m evals.baselines.memagent --benchmark dracula \
+  --base-url http://localhost:8556/v1 --api-key "$KEY"
+
 # Claude Code runs a Claude model through the `claude` CLI on a Max login, so it is a
-# reference point rather than a same-model comparison. It takes no endpoint flags.
+# reference point rather than a same-model comparison. It takes no endpoint flags,
+# and is the one baseline that does not support Dracula.
 
 # Claude Code on Loong
 python -m evals.baselines.claude_code --benchmark loong
