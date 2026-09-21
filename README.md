@@ -103,3 +103,76 @@ uv run pytest -q          # 744 tests, no API calls
 
 Tests that hit a real model are marker-gated and skipped by default (`pytest -m arag`,
 `-m judge`, …).
+
+## Paper experiments
+
+Everything below runs against one served model. Sampling is the model's own default —
+there are no sampling flags.
+
+```bash
+vllm serve Qwen/Qwen3.5-35B-A3B \
+  --port 8555 --api-key "$KEY" \
+  --trust-remote-code --language-model-only \
+  --reasoning-parser qwen3 \
+  --enable-auto-tool-choice --tool-call-parser qwen3_coder
+```
+
+Fetch the data once (`loong.download_docs`, `corpusqa.download_data --set 1m`), then run
+each baseline over both benchmarks. Omitting `--limit` runs the whole benchmark — 1,600
+Loong tasks, 329 CorpusQA — and re-running resumes, so a run can be interrupted and
+restarted.
+
+```bash
+for B in readagent structrag arag codeact rlm; do
+  for BENCH in loong corpusqa; do
+    python -m evals.baselines.$B --benchmark $BENCH \
+      --model Qwen/Qwen3.5-35B-A3B \
+      --base-url http://localhost:8555/v1 --api-key "$KEY"
+  done
+done
+```
+
+`raptor` and `hipporag` take the same form but are far more call-heavy — RAPTOR pays a
+reasoning summary per cluster, HippoRAG ~2 calls per passage with no reuse across tasks.
+Add `--limit N` to run a subset:
+
+```bash
+python -m evals.baselines.raptor --benchmark loong \
+  --model Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY" --limit N
+```
+
+Then the method, over both benchmarks and both inference strategies. Note it takes the
+provider-prefixed model id, where the baselines take the bare one:
+
+```bash
+python scripts/r3con/loong/run.py --all --inference both \
+  --model hosted_vllm/Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY" --workers 20
+
+python scripts/r3con/corpusqa/run.py --inference both \
+  --model hosted_vllm/Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY" --workers 20
+```
+
+### Two baselines that do not use the served model
+
+**`memagent`** is an RL-trained checkpoint, not a prompting method — the loop run with a
+generic model is not MemAgent. It needs its own server, and its 1,024-token cap means a
+reasoning model spends the budget on thinking and returns an empty memory:
+
+```bash
+vllm serve BytedTsinghua-SIA/RL-MemoryAgent-14B --port 8556 --api-key "$KEY"
+
+python -m evals.baselines.memagent --benchmark loong \
+  --base-url http://localhost:8556/v1 --api-key "$KEY"
+```
+
+**`claude-code`** runs a Claude model through the `claude` CLI on a Max login, so it is a
+reference point rather than a same-model comparison. It takes no endpoint flags, and runs
+one task at a time by default:
+
+```bash
+python -m evals.baselines.claude_code --benchmark loong
+python -m evals.baselines.claude_code --benchmark corpusqa
+```
