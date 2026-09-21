@@ -15,7 +15,6 @@ dependencies = [
     "litellm>=1.50.0",
     "pydantic>=2.0",
     "python-dotenv>=1.0",
-    "rich>=15.0.0",
     "tenacity>=9.1.4",
 ]
 
@@ -136,7 +135,6 @@ pythonpath = ["."]
 # de-selected by default; run one with e.g. `pytest -m judge` / `-m structrag` / `-m arag`.
 markers = [
     "judge: end-to-end test that calls the real LLM judge (LooGLE score())",
-    "live: end-to-end test of the scoring wiring (score.json scoreboard) against the real grader LLM",
     "structrag: end-to-end test that runs the StructRAG baseline pipeline against the real model",
     "arag: end-to-end test that runs the A-RAG baseline (agent + tools + embeddings) against the real model",
     "readagent: end-to-end test that runs the ReadAgent baseline (paginate/gist/look-up) against the real model",
@@ -144,4 +142,4 @@ markers = [
     "codeact: end-to-end test that runs the CodeAct baseline (smolagents CodeAgent) against the real model",
     "memagent: end-to-end test that runs the MemAgent baseline against a served RL-MemoryAgent vLLM ($MEMAGENT_BASE_URL)",
 ]
-addopts = "-m 'not judge and not live and not structrag and not arag and not readagent and not rlm and not codeact and not memagent'"
+addopts = "-m 'not judge and not structrag and not arag and not readagent and not rlm and not codeact and not memagent'"

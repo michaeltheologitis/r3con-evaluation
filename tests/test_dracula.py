@@ -302,7 +302,7 @@ def test_score_details_shape_is_the_shared_scoreresult(fake_judge) -> None:
 def test_score_json_payload_preserves_the_pair(fake_judge, tmp_path) -> None:
     """The generic writer whitelists keys — assert the lenient grade survives anyway.
 
-    Mirrors `evals.analysis.score.ensure_scores`' payload construction exactly.
+    Mirrors the payload a grader builds from a manifest.
     """
     fake_judge("incorrect", "correct")
     (result,) = dracula.score_details(["death_toll"], ["an answer"])

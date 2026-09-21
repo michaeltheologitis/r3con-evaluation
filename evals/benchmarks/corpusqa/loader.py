@@ -102,7 +102,7 @@ _QUESTION_SEP = "\n# Question:\n"
 _ZH_DOMAINS = frozenset({"financial_zh"})
 
 # Report/scoreboard display names for the ``domain`` axis (what ``get_task_metadata``
-# returns + what ``evals.analysis`` groups "by domain" on): the bilingual ``financial``
+# returns + what a report groups "by domain" on): the bilingual ``financial``
 # split (``financial_en`` + ``financial_zh``) MERGES into one ``financial`` bucket and the
 # ``_en``/``_zh`` suffix is dropped → three buckets, sorting to ``education`` / ``financial``
 # / ``real estate``. This is ONLY the report grouping — the raw 4-way domain still drives

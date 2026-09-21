@@ -14,8 +14,8 @@ scan still counts as "done" — so the task never re-runs:
 
 This removes those folders (so the runner re-dispatches just those tasks) while
 KEEPING real results and genuine model failures: any folder with a
-``manifest.json`` (an answer + its ``score.json``) and any error the analysis CLI
-counts as a failed prediction (``ContextWindowExceededError``) are left intact.
+``manifest.json`` (an answer) and any error that counts as a genuine failed
+prediction (``ContextWindowExceededError``) are left intact.
 ``--all-errors`` also removes those genuine-failure folders for a full retry.
 
 structrag, like direct-llm, is an inference-time baseline with **no shared index

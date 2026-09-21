@@ -22,11 +22,11 @@ nine — which the two-gold construction cannot do.
 ``score_details`` returns the SHARED ``ScoreResult`` shape unchanged, using its
 existing fields:
 
-* ``score``    — the **strict** 0/1. The analysis CLI reads this, so its headline
+* ``score``    — the **strict** 0/1. A report reads this, so its headline
   accuracy for dracula is the strict metric (unchanged behaviour).
 * ``parsed``   — the pair of verdicts, e.g. ``"strict=correct, lenient=correct"``
   (``parsed`` is unused by the judge benchmarks and is persisted verbatim into
-  ``score.json`` by ``evals.analysis.score``, so the lenient grade is cached for
+  ``score.json`` by whatever grades these logs, so the lenient grade is cached for
   free). Decode it with :func:`read_verdicts`.
 * ``rationale``— both judges' reasoning, labelled by which gold each ran against.
 

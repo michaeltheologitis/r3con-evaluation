@@ -114,7 +114,7 @@ def usage_envelope(response: Any) -> RunUsage:
     live; even serially). Reading ``response.usage`` here is exact and always
     present. Output shape is identical to a ``usage_scope`` that saw exactly one
     call (``total[model]`` rollup with ``num_calls`` + ``calls[0]``), so the manifest
-    and the analysis CLI consume it unchanged. The model key is ``response.model``
+    and any reader of it consume it unchanged. The model key is ``response.model``
     (what actually produced the tokens — matches what the callback records).
 
     Returns an empty envelope (``{"total": {}, "calls": []}``) if the response
@@ -224,7 +224,6 @@ def _merge_numeric(into: dict[str, Any], src: dict[str, Any]) -> None:
     reasoning_tokens``, …). Non-numeric, non-dict values (None, strings) are
     skipped — the rollup is numbers only; the raw usage lives in ``calls``.
 
-    Also reused by ``evals.analysis.aggregate`` to sum rollups across manifests.
     """
     for k, v in (src or {}).items():
         if isinstance(v, bool):

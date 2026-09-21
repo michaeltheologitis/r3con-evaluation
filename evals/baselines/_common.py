@@ -184,8 +184,7 @@ ERROR_FILE = "error.json"
 # to infra noise (a transient timeout, an OOM child-crash). The single source of
 # truth for that judgment, defined beside ``build_error_record`` (which writes
 # ``error_type``) and consumed by BOTH downstream readers so they can't diverge:
-# the analysis CLI folds these into its "all" (⁺) view as worst-score predictions,
-# and the log cleaners KEEP exactly these by default (every other recorded error
+# the log cleaners KEEP exactly these by default (every other recorded error
 # is retryable noise, cleared so the task re-runs). This is a property of the
 # ERROR, not the benchmark. Context-window is the canonical case.
 FAILURE_ERROR_TYPES = frozenset({"ContextWindowExceededError"})
@@ -201,9 +200,9 @@ def hit_step_cap(manifest: dict[str, Any]) -> bool:
     writes neither, so this is ``False`` for them.
 
     Like ``FAILURE_ERROR_TYPES``, this is a SINGLE source of truth shared so the two
-    readers can't diverge: the analysis CLI counts a capped run as a failed prediction
-    in its "all" (⁺) view, and the rlm/codeact log cleaners can opt to remove capped
-    run folders (``--max-iter``) so the task re-runs — both keying on this one judgment.
+    readers can't diverge: the rlm/codeact log cleaners use it to remove capped run
+    folders (``--max-iter``) so the task re-runs, and anything that grades these logs
+    later can key on the same judgment.
     """
     trace = manifest.get("trace") or {}
     if trace.get("state") == "max_steps_error":

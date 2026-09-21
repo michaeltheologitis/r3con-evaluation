@@ -65,8 +65,8 @@ _TASK_NAMES = {
     4: "Chain of Reasoning",
 }
 
-# Analysis-report display config, read generically by `evals.analysis.aggregate`
-# via getattr (so the analysis layer stays benchmark-agnostic — no name branching).
+# Report display config, read generically via getattr by whatever renders these
+# metadata axes (so that layer stays benchmark-agnostic — no name branching).
 # - Hide the redundant breakdown axes: `task_name` duplicates `task` (whose integer
 #   values the labels below annotate with the name), and `length` is the raw token
 #   count — a per-task continuous value that's just a finer-grained `set` (the

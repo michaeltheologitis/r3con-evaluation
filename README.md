@@ -11,10 +11,10 @@ without re-plumbing anything.
 evals/
   benchmarks/{loong,corpusqa,dracula}/   the datasets + their judges
   baselines/<name>/                      one self-contained package per baseline
+  r3con/                                 the method (see evals/r3con/README.md)
   llm/                                   the LiteLLM seam + token accounting
-  analysis/                              scoring (score.json) + the results CLI
 scripts/                                 log cleaners
-analysis/                                (figures live in a separate repo)
+analysis/                                empty — scoring and figures live in a separate repo
 logs/                                    run outputs — gitignored, never committed
 tests/
 ```
@@ -80,19 +80,15 @@ process exactly once — no retries — and ends with either a `manifest.json` o
 --tool-call-parser hermes` on vLLM); `claude-code` shells out to the `claude` CLI
 and runs on a Max login, not the served model.
 
-## Results
+## Output
 
-```bash
-python -m evals.analysis --benchmark loong --baseline codeact
-```
-
-Grading is a separate cached step: the CLI reads each run's raw answer, grades it
-via the benchmark's judge, writes a self-contained `score.json` beside the
-manifest, and never re-pays for a grade it already has.
+This repo **runs methods and records what they produced** — it does not grade or
+aggregate. Each benchmark still exposes `score` / `score_details` (its judge), for
+whatever reads these logs later; scoring, tables and figures live outside this repo.
 
 Logs live at `logs/{benchmark}/{baseline}/`, one folder per run holding the
 manifest, the method's own artifacts (trajectory, index, memory — whatever it
-builds), `calls.json`, and `score.json`. **Token cost is captured completely**:
+builds) and `calls.json`. **Token cost is captured completely**:
 every completion and every embedding a task makes, in one `usage` record.
 
 ## Tests

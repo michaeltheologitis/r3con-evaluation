@@ -40,8 +40,7 @@ first; every baseline below is a variation on it.
   `run_one(benchmark, task_id, run_config, base_dir_or_run_dir, litellm_kwargs)`
   returns `{raw_answer, usage, trace, index_ref?, calls_full?}`. The single most
   load-bearing invariant: the record is **purely the model's output** —
-  `run_one` **never grades**. Grading is deferred to a cached `score.json` at
-  analysis time. (See [evals/baselines/_common.py](evals/baselines/_common.py)
+  `run_one` **never grades** — grading happens outside this repo. (See [evals/baselines/_common.py](evals/baselines/_common.py)
   for the contract and serialization.)
 
 - **The runner.** Each baseline owns a self-contained runner
@@ -67,17 +66,12 @@ first; every baseline below is a variation on it.
   the CLI's own usage object, with a `usage_scope` callback as the runner's
   fallback) — see the cross-cutting table at the end — but the **shape is always**
   `{total, calls}` (see [evals/llm/usage.py](evals/llm/usage.py)). Index-build
-  cost lives with the index and travels on reuse; the analysis CLI counts each
-  index once.
+  cost lives with the index and travels on reuse, recorded once per index.
 
-- **Scoring + analysis.** `score.json` is computed once and cached (keyed on the
-  grader model + the `SCORER` mechanism id), so re-aggregating never re-pays the
-  parse/judge LLM ([evals/analysis/score.py](evals/analysis/score.py)). The
-  analysis CLI ([evals/analysis/aggregate.py](evals/analysis/aggregate.py))
-  groups inferences by `config`, reads the cached metric, and renders a **dual
-  answered-vs-⁺all view** (context-window errors folded in at the benchmark's
-  worst value), per-metadata-axis tables, and an inference-vs-construction cost
-  split in USD.
+- **Grading is somebody else's job.** Each benchmark owns its judge and exposes
+  `score` / `score_details`, but nothing here calls them: a run records the model's
+  raw answer and its cost, and scoring, tables and figures happen in a separate,
+  unified repo that reads these logs.
 
 ---
 
