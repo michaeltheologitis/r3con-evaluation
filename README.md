@@ -97,73 +97,130 @@ Tests that hit a real model are marker-gated and skipped by default (`pytest -m 
 
 ## Paper experiments
 
-Everything below runs against one served model. Sampling is the model's own default —
-there are no sampling flags.
+Every run below uses `Qwen/Qwen3.5-35B-A3B` on the served endpoint, with the model's own
+default sampling. `$KEY` is the API key passed to `vllm serve`.
 
 ```bash
+# ============ serve the model ============
 vllm serve Qwen/Qwen3.5-35B-A3B \
   --port 8555 --api-key "$KEY" \
   --trust-remote-code --language-model-only \
   --reasoning-parser qwen3 \
   --enable-auto-tool-choice --tool-call-parser qwen3_coder
-```
 
-Fetch the data once (`loong.download_docs`, `corpusqa.download_data --set 1m`), then run
-each baseline over both benchmarks. Omitting `--limit` runs the whole benchmark — 1,600
-Loong tasks, 329 CorpusQA — and re-running resumes, so a run can be interrupted and
-restarted.
 
-```bash
-for B in readagent structrag arag codeact rlm; do
-  for BENCH in loong corpusqa; do
-    python -m evals.baselines.$B --benchmark $BENCH \
-      --model Qwen/Qwen3.5-35B-A3B \
-      --base-url http://localhost:8555/v1 --api-key "$KEY"
-  done
-done
-```
+# ============ fetch the data (once) ============
+python -m evals.benchmarks.loong.download_docs
+python -m evals.benchmarks.corpusqa.download_data --set 1m
 
-`raptor` and `hipporag` take the same form but are far more call-heavy — RAPTOR pays a
-reasoning summary per cluster, HippoRAG ~2 calls per passage with no reuse across tasks.
-Add `--limit N` to run a subset:
 
-```bash
+# ============ baselines ============
+# Omitting --limit runs the whole benchmark: 1,600 Loong tasks, 329 CorpusQA.
+# Re-running resumes, so any of these can be interrupted and restarted.
+
+# ReadAgent on Loong
+python -m evals.baselines.readagent --benchmark loong \
+  --model Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY"
+
+# ReadAgent on CorpusQA
+python -m evals.baselines.readagent --benchmark corpusqa \
+  --model Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY"
+
+# StructRAG on Loong
+python -m evals.baselines.structrag --benchmark loong \
+  --model Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY"
+
+# StructRAG on CorpusQA
+python -m evals.baselines.structrag --benchmark corpusqa \
+  --model Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY"
+
+# A-RAG on Loong   (needs the tool-call parser, which the serve command above enables)
+python -m evals.baselines.arag --benchmark loong \
+  --model Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY"
+
+# A-RAG on CorpusQA
+python -m evals.baselines.arag --benchmark corpusqa \
+  --model Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY"
+
+# CodeAct on Loong
+python -m evals.baselines.codeact --benchmark loong \
+  --model Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY"
+
+# CodeAct on CorpusQA
+python -m evals.baselines.codeact --benchmark corpusqa \
+  --model Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY"
+
+# RLM on Loong
+python -m evals.baselines.rlm --benchmark loong \
+  --model Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY"
+
+# RLM on CorpusQA
+python -m evals.baselines.rlm --benchmark corpusqa \
+  --model Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY"
+
+# RAPTOR on Loong   (call-heavy: a reasoning summary per cluster. Add --limit N for a subset)
 python -m evals.baselines.raptor --benchmark loong \
   --model Qwen/Qwen3.5-35B-A3B \
-  --base-url http://localhost:8555/v1 --api-key "$KEY" --limit N
-```
+  --base-url http://localhost:8555/v1 --api-key "$KEY"
 
-Then the method, over both benchmarks and both inference strategies. Note it takes the
-provider-prefixed model id, where the baselines take the bare one:
+# RAPTOR on CorpusQA
+python -m evals.baselines.raptor --benchmark corpusqa \
+  --model Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY"
 
-```bash
+# HippoRAG on Loong   (call-heavy: ~2 calls per passage, no reuse. Add --limit N for a subset)
+python -m evals.baselines.hipporag --benchmark loong \
+  --model Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY"
+
+# HippoRAG on CorpusQA
+python -m evals.baselines.hipporag --benchmark corpusqa \
+  --model Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY"
+
+
+# ============ the method ============
+# R3Con on Loong   (takes the provider-prefixed model id, unlike the baselines)
 python scripts/r3con/loong/run.py --all --inference both \
   --model hosted_vllm/Qwen/Qwen3.5-35B-A3B \
   --base-url http://localhost:8555/v1 --api-key "$KEY" --workers 20
 
+# R3Con on CorpusQA
 python scripts/r3con/corpusqa/run.py --inference both \
   --model hosted_vllm/Qwen/Qwen3.5-35B-A3B \
   --base-url http://localhost:8555/v1 --api-key "$KEY" --workers 20
-```
 
-### Two baselines that do not use the served model
 
-**`memagent`** is an RL-trained checkpoint, not a prompting method — the loop run with a
-generic model is not MemAgent. It needs its own server, and its 1,024-token cap means a
-reasoning model spends the budget on thinking and returns an empty memory:
-
-```bash
+# ============ the two that do not use the served model ============
+# MemAgent is an RL-trained checkpoint, not a prompting method, so it needs its own
+# server. Its 1,024-token cap is the method, which means a reasoning model spends the
+# budget on thinking and returns an empty memory.
 vllm serve BytedTsinghua-SIA/RL-MemoryAgent-14B --port 8556 --api-key "$KEY"
 
+# MemAgent on Loong
 python -m evals.baselines.memagent --benchmark loong \
   --base-url http://localhost:8556/v1 --api-key "$KEY"
-```
 
-**`claude-code`** runs a Claude model through the `claude` CLI on a Max login, so it is a
-reference point rather than a same-model comparison. It takes no endpoint flags, and runs
-one task at a time by default:
+# MemAgent on CorpusQA
+python -m evals.baselines.memagent --benchmark corpusqa \
+  --base-url http://localhost:8556/v1 --api-key "$KEY"
 
-```bash
+# Claude Code runs a Claude model through the `claude` CLI on a Max login, so it is a
+# reference point rather than a same-model comparison. It takes no endpoint flags.
+
+# Claude Code on Loong
 python -m evals.baselines.claude_code --benchmark loong
+
+# Claude Code on CorpusQA
 python -m evals.baselines.claude_code --benchmark corpusqa
 ```
