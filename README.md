@@ -260,8 +260,7 @@ python -m evals.baselines.memagent --benchmark dracula \
   --base-url http://localhost:8556/v1 --api-key "$KEY"
 
 # Claude Code runs a Claude model through the `claude` CLI on a Max login, so it is a
-# reference point rather than a same-model comparison. It takes no endpoint flags,
-# and is the one baseline that does not support Dracula.
+# reference point rather than a same-model comparison. It takes no endpoint flags.
 
 # Claude Code on Loong
 python -m evals.baselines.claude_code --benchmark loong
