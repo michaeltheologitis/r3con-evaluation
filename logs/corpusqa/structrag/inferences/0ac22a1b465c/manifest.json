@@ -1,0 +1,1 @@
+{"task_id": "real_estate_en_18@1m", "config": {"benchmark": "corpusqa", "baseline": "structrag", "model": "qwen3-5-4b", "seed": 42}, "usage": {"total": {"Qwen/Qwen3.5-4B": {"prompt_tokens": 1723420, "completion_tokens": 712491}}}}

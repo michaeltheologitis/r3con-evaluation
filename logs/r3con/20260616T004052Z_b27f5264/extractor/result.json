@@ -1,0 +1,1 @@
+{"totals": {"tokens": {"prompt": 34404, "completion": 7655, "total": 42059}}, "parsed": {"papers": [{"title": "Scaling Advantage in Approximate Optimization with Quantum Annealing", "cites_from_collection": []}, {"title": "4-clique Network Minor Embedding for Quantum Annealers", "cites_from_collection": ["Scaling Advantage in Approximate Optimization with Quantum Annealing"]}]}}

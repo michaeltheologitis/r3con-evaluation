@@ -1,0 +1,1 @@
+{"task_id": "3336e301-8970-4ac5-af4b-5386a8b9306f", "config": {"benchmark": "loong", "baseline": "memagent", "model": "rl-memoryagent-14b", "seed": 42, "chunk_size": 5000, "max_new": 1024, "max_context_len": 0, "run_version": "v1"}, "usage": {"total": {"BytedTsinghua-SIA/RL-MemoryAgent-14B": {"prompt_tokens": 153535, "completion_tokens": 11765}}}}

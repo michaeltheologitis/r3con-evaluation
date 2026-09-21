@@ -1,0 +1,1 @@
+{"task_id": "education_en_22@1m", "config": {"benchmark": "corpusqa", "baseline": "structrag", "model": "qwen3-5-9b", "seed": 42}, "usage": {"total": {"Qwen/Qwen3.5-9B": {"prompt_tokens": 1056356, "completion_tokens": 321849}}}}

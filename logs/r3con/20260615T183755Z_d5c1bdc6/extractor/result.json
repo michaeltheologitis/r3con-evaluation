@@ -1,0 +1,1 @@
+{"totals": {"tokens": {"prompt": 110619, "completion": 61657, "total": 172276}}, "parsed": {"company_financial_data": [{"company_name": "史丹利农业集团股份有限公司", "company_stock_code": "002588", "reporting_period": "2024 年第一季度", "special_reserve_ending_balance": 142881671.66, "special_reserve_beginning_balance": 127302623.15, "quote": "|专项储备|142,881,671.66|127,302,623.15|"}]}}

@@ -1,0 +1,197 @@
+Traceback (most recent call last):
+  File "<path>/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "<path>/site-packages/httpx/_transports/default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+  File "<path>/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "<path>/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+        pool_request.request
+    )
+  File "<path>/site-packages/httpcore/_sync/connection.py", line 103, in handle_request
+    return self._connection.handle_request(request)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "<path>/site-packages/httpcore/_sync/http11.py", line 136, in handle_request
+    raise exc
+  File "<path>/site-packages/httpcore/_sync/http11.py", line 106, in handle_request
+    ) = self._receive_response_headers(**kwargs)
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "<path>/site-packages/httpcore/_sync/http11.py", line 177, in _receive_response_headers
+    event = self._receive_event(timeout=timeout)
+  File "<path>/site-packages/httpcore/_sync/http11.py", line 217, in _receive_event
+    data = self._network_stream.read(
+        self.READ_NUM_BYTES, timeout=timeout
+    )
+  File "<path>/site-packages/httpcore/_backends/sync.py", line 126, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "<path>/lib/python3.13/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "<path>/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout: timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<path>/site-packages/litellm/llms/custom_httpx/http_handler.py", line 1075, in post
+    response = self.client.send(req, stream=stream)
+  File "<path>/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+        request,
+    ...<2 lines>...
+        history=[],
+    )
+  File "<path>/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+        request,
+        follow_redirects=follow_redirects,
+        history=history,
+    )
+  File "<path>/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "<path>/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+  File "<path>/site-packages/httpx/_transports/default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "<path>/lib/python3.13/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "<path>/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout: timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<path>/site-packages/litellm/llms/custom_httpx/llm_http_handler.py", line 236, in _make_common_sync_call
+    response = sync_httpx_client.post(
+        url=api_base,
+    ...<8 lines>...
+        logging_obj=logging_obj,
+    )
+  File "<path>/site-packages/litellm/llms/custom_httpx/http_handler.py", line 1079, in post
+    raise litellm.Timeout(
+    ...<3 lines>...
+    )
+litellm.exceptions.Timeout: litellm.Timeout: Connection timed out after 600.0 seconds.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<path>/site-packages/litellm/main.py", line 2542, in completion
+    response = base_llm_http_handler.completion(
+        model=model,
+    ...<15 lines>...
+        provider_config=provider_config,
+    )
+  File "<path>/site-packages/litellm/llms/custom_httpx/llm_http_handler.py", line 560, in completion
+    response = self._make_common_sync_call(
+        sync_httpx_client=sync_httpx_client,
+    ...<7 lines>...
+        logging_obj=logging_obj,
+    )
+  File "<path>/site-packages/litellm/llms/custom_httpx/llm_http_handler.py", line 263, in _make_common_sync_call
+    raise self._handle_error(e=e, provider_config=provider_config)
+          ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<path>/site-packages/litellm/llms/custom_httpx/llm_http_handler.py", line 4788, in _handle_error
+    raise provider_config.get_error_class(
+    ...<3 lines>...
+    )
+litellm.llms.openai.common_utils.OpenAIError: litellm.Timeout: Connection timed out after 600.0 seconds.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<path>/site-packages/litellm/utils.py", line 1593, in wrapper
+    result = original_function(*args, **kwargs)
+  File "<path>/site-packages/litellm/main.py", line 4412, in completion
+    raise exception_type(
+          ~~~~~~~~~~~~~~^
+        model=model,
+        ^^^^^^^^^^^^
+    ...<3 lines>...
+        extra_kwargs=kwargs,
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "<path>/site-packages/litellm/litellm_core_utils/exception_mapping_utils.py", line 2456, in exception_type
+    raise e
+  File "<path>/site-packages/litellm/litellm_core_utils/exception_mapping_utils.py", line 561, in exception_type
+    raise Timeout(
+    ...<4 lines>...
+    )
+litellm.exceptions.Timeout: litellm.Timeout: Timeout Error: Hosted_vllmException - litellm.Timeout: Connection timed out after 600.0 seconds.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<path>/src/<pkg>/gr.py", line 226, in _run_llm
+    answer = inference.infer_llm(
+        task=task, parsed=parsed, source_docs=source_docs, summaries=summaries, model=model,
+        prompt_version=prompt_version, run=run, **llm_kwargs,
+    )
+  File "<path>/src/<pkg>/stages/inference.py", line 240, in infer_llm
+    litellm_chat_completion(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        system_prompt=system_prompt,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        **llm_kwargs,
+        ^^^^^^^^^^^^^
+    ),
+    ^
+  File "<path>/src/<pkg>/runtime/llm.py", line 179, in litellm_chat_completion
+    response = litellm_chat_completion_full(
+        system_prompt=system_prompt,
+    ...<9 lines>...
+        **kwargs,
+    )
+  File "<path>/src/<pkg>/runtime/llm.py", line 122, in litellm_chat_completion_full
+    response = litellm.completion(**request)
+  File "<path>/site-packages/litellm/utils.py", line 1717, in wrapper
+    return litellm.completion_with_retries(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "<path>/site-packages/litellm/main.py", line 4450, in completion_with_retries
+    return retryer(original_function, *args, **kwargs)
+  File "<path>/site-packages/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "<path>/site-packages/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "<path>/site-packages/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+          ~~~~~~~~~~~~~~~~~^^
+  File "<path>/site-packages/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+          ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "<path>/lib/python3.13/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "<path>/lib/python3.13/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "<path>/site-packages/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "<path>/site-packages/litellm/utils.py", line 1772, in wrapper
+    raise e
+  File "<path>/site-packages/litellm/utils.py", line 1593, in wrapper
+    result = original_function(*args, **kwargs)
+  File "<path>/site-packages/litellm/main.py", line 4412, in completion
+    raise exception_type(
+          ~~~~~~~~~~~~~~^
+        model=model,
+        ^^^^^^^^^^^^
+    ...<3 lines>...
+        extra_kwargs=kwargs,
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "<path>/site-packages/litellm/litellm_core_utils/exception_mapping_utils.py", line 2456, in exception_type
+    raise e
+  File "<path>/site-packages/litellm/litellm_core_utils/exception_mapping_utils.py", line 561, in exception_type
+    raise Timeout(
+    ...<4 lines>...
+    )
+litellm.exceptions.Timeout: litellm.Timeout: Timeout Error: Hosted_vllmException - litellm.Timeout: Connection timed out after 600.0 seconds.

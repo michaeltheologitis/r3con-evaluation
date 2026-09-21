@@ -1,0 +1,1 @@
+{"task_id": "9cecf073-04e2-43b3-8174-6eeac8126146", "config": {"benchmark": "loong", "baseline": "claude-code", "model": "claude-opus-4-8", "effort": "xhigh", "run_version": "v1"}, "usage": {"total": {"claude-haiku-4-5-20251001": {"prompt_tokens": 753, "completion_tokens": 23}, "claude-opus-4-8": {"prompt_tokens": 74555, "completion_tokens": 1909}}}}

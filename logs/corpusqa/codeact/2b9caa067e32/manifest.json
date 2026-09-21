@@ -1,0 +1,1 @@
+{"task_id": "real_estate_en_58@1m", "config": {"benchmark": "corpusqa", "baseline": "codeact", "model": "qwen3-5-4b", "seed": 42, "max_steps": 60, "run_version": "v1"}, "usage": {"total": {"Qwen/Qwen3.5-4B": {"prompt_tokens": 11916425, "completion_tokens": 27882}}}, "trace": {"state": "max_steps_error"}}

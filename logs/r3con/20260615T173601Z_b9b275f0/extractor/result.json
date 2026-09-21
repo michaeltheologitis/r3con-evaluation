@@ -1,0 +1,1 @@
+{"totals": {"tokens": {"prompt": 119747, "completion": 15097, "total": 134844}}, "parsed": {"company_filings": [{"company_name": "Acorda Therapeutics, Inc.", "filing_period": "March 31, 2024", "metric_label": "Net loss per share—basic", "basic_eps_value": -22.06, "currency_unit": "dollars"}]}}

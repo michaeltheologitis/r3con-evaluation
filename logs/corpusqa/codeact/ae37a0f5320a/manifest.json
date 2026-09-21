@@ -1,0 +1,1 @@
+{"task_id": "financial_zh_70@1m", "config": {"benchmark": "corpusqa", "baseline": "codeact", "model": "qwen3-5-9b", "seed": 42, "max_steps": 60, "run_version": "v1"}, "usage": {"total": {"Qwen/Qwen3.5-9B": {"prompt_tokens": 1655608, "completion_tokens": 33526}}}, "trace": {"state": "success"}}

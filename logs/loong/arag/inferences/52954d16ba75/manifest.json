@@ -1,0 +1,1 @@
+{"task_id": "3ea0fb8d-17a3-48f2-9b70-8c0cea9a042b", "config": {"benchmark": "loong", "baseline": "arag", "model": "qwen3-5-35b-a3b", "seed": 42, "embedding_model": "openai/text-embedding-3-small", "index_version": "v1", "chunker_version": "v2"}, "usage": {"total": {"Qwen/Qwen3.5-35B-A3B": {"prompt_tokens": 14515, "completion_tokens": 455}}}}

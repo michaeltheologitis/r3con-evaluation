@@ -1,0 +1,1 @@
+{"task_id": "financial_zh_9@1m", "config": {"benchmark": "corpusqa", "baseline": "rlm", "model": "qwen3-5-9b", "seed": 42, "max_iterations": 30, "max_depth": 1, "max_timeout": null, "run_version": "v1"}, "usage": {"total": {"Qwen/Qwen3.5-9B": {"prompt_tokens": 358920, "completion_tokens": 15159}}}, "trace": {"n_iterations": 31, "max_iterations": 30}}

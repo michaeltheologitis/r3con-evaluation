@@ -1,0 +1,1 @@
+{"task_id": "education_en_7@1m", "config": {"benchmark": "corpusqa", "baseline": "claude-code", "model": "claude-sonnet-5", "effort": "high", "run_version": "v1"}, "usage": {"total": {"claude-haiku-4-5-20251001": {"prompt_tokens": 818, "completion_tokens": 14}, "claude-sonnet-5": {"prompt_tokens": 497304, "completion_tokens": 2954}}}}

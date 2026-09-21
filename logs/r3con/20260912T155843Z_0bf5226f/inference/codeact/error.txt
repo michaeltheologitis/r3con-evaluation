@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "<path>/src/<pkg>/eval/loong/run_task.py", line 105, in run_task
+    res = gr_answer(
+        task=ti.task, documents=ti.documents, config=config, strategies=strategies,
+        task_logger=log, api_base=api_base, api_key=api_key,
+    )
+  File "<path>/src/<pkg>/gr.py", line 115, in gr_answer
+    proposal = propose_schema(
+        task=task, summaries=summaries, model=model, prompt_version=config.prompts["proposer"],
+        run=proposer_run, **llm_kwargs,
+    )
+  File "<path>/src/<pkg>/stages/proposer.py", line 222, in propose_schema
+    raise SchemaError(
+    ...<2 lines>...
+    )
+grounded.stages.extractor.SchemaError: propose_schema exhausted 5 attempts. Last validator error: Schema code failed to execute: SyntaxError('invalid syntax', ('<string>', 14, 1, '</schema>\n', 14, 2))

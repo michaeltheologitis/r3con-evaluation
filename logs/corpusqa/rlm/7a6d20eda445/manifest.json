@@ -1,0 +1,1 @@
+{"task_id": "education_en_4@1m", "config": {"benchmark": "corpusqa", "baseline": "rlm", "model": "qwen3-5-4b", "seed": 42, "max_iterations": 30, "max_depth": 1, "max_timeout": null, "run_version": "v1"}, "usage": {"total": {"Qwen/Qwen3.5-4B": {"prompt_tokens": 667817, "completion_tokens": 22758}}}, "trace": {"n_iterations": 31, "max_iterations": 30}}

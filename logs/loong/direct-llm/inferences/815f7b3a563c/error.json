@@ -1,0 +1,1 @@
+{"task_id": "731f67b3-c307-47c5-bbdd-d53db95f950d", "config": {"benchmark": "loong", "baseline": "direct-llm", "model": "qwen3-5-35b-a3b", "seed": 42}, "error_type": "ContextWindowExceededError"}

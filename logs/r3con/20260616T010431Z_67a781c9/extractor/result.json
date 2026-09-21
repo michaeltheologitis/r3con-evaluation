@@ -1,0 +1,1 @@
+{"totals": {"tokens": {"prompt": 50006, "completion": 27903, "total": 77909}}, "parsed": {"financial_line_items": [{"company": "广东银禧科技股份有限公司", "line_item_name": "一年内到期的非流动资产", "value": 2175813.52, "unit": "元", "period": "2024 年第一季度", "variation_explanation": "系报告期内重签了厂房租赁协议，一年内到期的长期应收款有所增加所致。"}]}}

@@ -1,0 +1,37 @@
+Traceback (most recent call last):
+  File "<path>/src/<pkg>/eval/loong/run_task.py", line 105, in run_task
+    res = gr_answer(
+        task=ti.task, documents=ti.documents, config=config, strategies=strategies,
+        task_logger=log, api_base=api_base, api_key=api_key,
+    )
+  File "<path>/src/<pkg>/gr.py", line 138, in gr_answer
+    extraction = extract_text(
+        documents=documents, schema_code=proposal.schema_code, parse_cls=proposal.parse_cls,
+        task=task, prompt_version=config.prompts["extractor"], summaries=summaries, model=model,
+        run=extractor_run, **llm_kwargs,
+    )
+  File "<path>/src/<pkg>/stages/extractor.py", line 332, in extract_text
+    per_doc = parallel_map(one, documents, max_workers=max_workers)
+  File "<path>/src/<pkg>/parallel.py", line 52, in parallel_map
+    results[idx] = fut.result()
+                   ~~~~~~~~~~^^
+  File "<path>/lib/python3.13/concurrent/futures/_base.py", line 456, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "<path>/lib/python3.13/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "<path>/lib/python3.13/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "<path>/src/<pkg>/stages/extractor.py", line 317, in one
+    return extract_one_doc(
+        document=doc,
+    ...<10 lines>...
+        **llm_kwargs,
+    )
+  File "<path>/src/<pkg>/stages/extractor.py", line 248, in extract_one_doc
+    raise SchemaError(
+    ...<2 lines>...
+    )
+grounded.stages.extractor.SchemaError: extract_one_doc exhausted 5 attempts. Last validation error: ValidationError: 1 validation error for Parse
+  Invalid JSON: control character (\u0000-\u001F) found while parsing a string at line 7 column 0 [type=json_invalid, input_value='{\n  "high_yield_compani...yield_companies": []\n}', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid

@@ -1,0 +1,44 @@
+Traceback (most recent call last):
+  File "<path>/src/<pkg>/eval/loong/run_task.py", line 105, in run_task
+    res = gr_answer(
+        task=ti.task, documents=ti.documents, config=config, strategies=strategies,
+        task_logger=log, api_base=api_base, api_key=api_key,
+    )
+  File "<path>/src/<pkg>/gr.py", line 138, in gr_answer
+    extraction = extract_text(
+        documents=documents, schema_code=proposal.schema_code, parse_cls=proposal.parse_cls,
+        task=task, prompt_version=config.prompts["extractor"], summaries=summaries, model=model,
+        run=extractor_run, **llm_kwargs,
+    )
+  File "<path>/src/<pkg>/stages/extractor.py", line 333, in extract_text
+    parse, source_docs = _merge_with_source_docs(list(enumerate(per_doc)), parse_cls)
+                         ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<path>/src/<pkg>/stages/extractor.py", line 387, in _merge_with_source_docs
+    return parse_cls.model_validate(merged), source_docs
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "<path>/site-packages/pydantic/main.py", line 716, in model_validate
+    return cls.__pydantic_validator__.validate_python(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        obj,
+        ^^^^
+    ...<5 lines>...
+        by_name=by_name,
+        ^^^^^^^^^^^^^^^^
+    )
+    ^
+pydantic_core._pydantic_core.ValidationError: 5 validation errors for Parse
+judicial_admin
+  List should have at most 3 items after validation, not 5 [type=too_long, input_value=[ClassifiedDocument(docum...理（司法行政）')], input_type=list]
+    For further information visit https://errors.pydantic.dev/2.12/v/too_long
+exec_other
+  List should have at most 3 items after validation, not 4 [type=too_long, input_value=[ClassifiedDocument(docum...案由 - 其他案由')], input_type=list]
+    For further information visit https://errors.pydantic.dev/2.12/v/too_long
+admin_exprop
+  List should have at most 3 items after validation, not 4 [type=too_long, input_value=[ClassifiedDocument(docum...行为 - 行政征收')], input_type=list]
+    For further information visit https://errors.pydantic.dev/2.12/v/too_long
+exec_refund
+  List should have at most 5 items after validation, not 7 [type=too_long, input_value=[ClassifiedDocument(docum...异议裁定的复议')], input_type=list]
+    For further information visit https://errors.pydantic.dev/2.12/v/too_long
+criminal_public
+  List should have at most 3 items after validation, not 4 [type=too_long, input_value=[ClassifiedDocument(docum...危害公共安全罪')], input_type=list]
+    For further information visit https://errors.pydantic.dev/2.12/v/too_long

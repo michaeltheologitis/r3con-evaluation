@@ -1,0 +1,1 @@
+{"task_id": "real_estate_en_9@1m", "config": {"benchmark": "corpusqa", "baseline": "memagent", "model": "rl-memoryagent-14b", "seed": 42, "chunk_size": 5000, "max_new": 1024, "max_context_len": 0, "run_version": "v1"}, "usage": {"total": {"BytedTsinghua-SIA/RL-MemoryAgent-14B": {"prompt_tokens": 1083763, "completion_tokens": 74518}}}}
