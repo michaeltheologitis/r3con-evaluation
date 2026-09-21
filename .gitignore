@@ -9,6 +9,9 @@ __pycache__/
 # Notebook artifacts
 .ipynb_checkpoints/
 
+# analysis/ writes each figure twice: the PDF is the paper's, the PNG is a local check render
+analysis/figures/**/*.png
+
 .env
 
 # Run outputs. The stripped logs that reproduce the paper's tables ARE tracked, so the

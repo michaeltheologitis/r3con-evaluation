@@ -24,15 +24,24 @@ dependencies = [
 test = [
     "pytest>=8.0",
 ]
-# Notebook + plotting tooling — not required by any code path here: this harness runs
-# baselines and writes `logs/`, and the scoring/plotting of those logs happens outside
-# this repo. Kept as a convenience for doing that analysis from a notebook.
-full = [
-    "r3con-evaluation[test]",
+# `analysis/` — rebuilds the paper's tables and figures from `logs/`. No code path under
+# `evals/` imports any of this: pandas/matplotlib shape and draw, jinja2 renders the styled
+# tables, jupytext keeps results.py <-> results.ipynb in sync, and tokenizers +
+# huggingface-hub count the intermediate representation in the served model's own tokens.
+analysis = [
     "ipykernel>=7.2.0",
-    "ipywidgets>=8.1.8",
+    "jupyter>=1.0",
+    "jupytext>=1.16",
+    "jinja2>=3.1",
     "matplotlib>=3.10.8",
     "pandas>=2.3",
+    "huggingface-hub>=1.27.0",
+    "tokenizers>=0.23.1",
+]
+full = [
+    "r3con-evaluation[test]",
+    "r3con-evaluation[analysis]",
+    "ipywidgets>=8.1.8",
 ]
 # StructRAG baseline — OPTIONAL. `transformers` provides the served model's tokenizer +
 # config, which only SHARPEN StructRAG's reactive truncate-to-fit (precise token clipping

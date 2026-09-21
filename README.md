@@ -14,7 +14,8 @@ evals/
   llm/                    LiteLLM seam + token accounting
   settings.py             model ids and paths
 scripts/                  log cleaners, and the method's run entry points
-logs/                     run outputs (gitignored)
+logs/                     the runs behind the paper's numbers (stripped; see analysis/)
+analysis/                 rebuilds the paper's tables and figures from logs/
 tests/
 ```
 
@@ -25,6 +26,7 @@ method's source is vendored.
 Other docs:
 
 - [BASELINES.md](BASELINES.md) — what each baseline is and how it handles documents.
+- [analysis/README.md](analysis/README.md) — how the paper's tables and figures are rebuilt.
 - [THIRD_PARTY.md](THIRD_PARTY.md) — every vendored upstream and its license.
 - [evals/r3con/README.md](evals/r3con/README.md) — the method's pipeline and its logs.
 - [evals/benchmarks/loong/CHANGES.md](evals/benchmarks/loong/CHANGES.md) — how our Loong differs from upstream.
@@ -37,6 +39,18 @@ uv sync --all-extras
 ```
 
 Put `OPENAI_API_KEY` in `.env` — the judges and every embedding call go to OpenAI.
+
+## Reproducing the paper's numbers
+
+The runs are in `logs/`, so nothing has to be re-run:
+
+```bash
+uv sync --extra analysis
+uv run jupytext --sync --execute analysis/results.py
+```
+
+That rebuilds every table and figure — see [analysis/README.md](analysis/README.md). Scores
+are read from each run's `score.json` as the judge wrote it; no model is called.
 
 ## Data
 
