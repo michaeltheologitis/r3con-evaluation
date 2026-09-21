@@ -1,11 +1,12 @@
 """Unit tests for `evals.r3con.harness.dracula` — the pure / no-I/O bits (offline).
 
 No touching of the upstream loader: the adapter is (deliberately) pure delegation — ``load`` passes
-the question through, ``score_*`` coerce/serialize — so the only offline-testable bits are the
-constants and the empty-input short-circuits. The real verification (loading the real 45-doc corpus
-+ the correctness judge, against real vendored data) is in ``tests/live/test_dracula.py``.
+the question through, ``gold`` / ``metadata`` hand straight off to the benchmark loader — so the
+only offline-testable bit is the adapter's own constant surface. The real 46-document corpus and
+the correctness judge are exercised against the real vendored data by the benchmark's own tests in
+``tests/test_dracula.py``.
 
-Run with:  uv run python tests/unit/test_dracula.py
+Run with:  uv run pytest tests/r3con/test_dracula.py
 """
 
 from __future__ import annotations

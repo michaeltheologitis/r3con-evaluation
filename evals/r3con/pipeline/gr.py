@@ -13,7 +13,7 @@ Wires the four stages of the method:
 4. **infer** — ``inference.infer_llm`` (single call over parse + summaries) and/or
    ``inference.infer_codeact`` (the multi-turn sandboxed loop).
 
-Each stage writes into one flat run-folder ``logs/<run-folder>/`` (each run a new
+Each stage writes into one flat run-folder ``logs/r3con/<run-folder>/`` (each run a new
 timestamped folder; see :mod:`evals.r3con.pipeline.runs`). No coordinator class; the routing is
 plain control flow here.
 """

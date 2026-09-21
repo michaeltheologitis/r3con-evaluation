@@ -59,7 +59,8 @@ def _run_task_argv(
     ``--config`` + the same overrides (reconstructing the identical RunConfig) and writes
     into the parent-stamped ``--run-folder``. ``run_task_script`` is the per-task entry
     point relative to the repo root — Loong's by default, ``scripts/r3con/corpusqa/run_task.py``
-    for CorpusQA (the only benchmark-specific bit of an otherwise generic launcher)."""
+    or ``scripts/r3con/dracula/run_task.py`` for the other two (the only benchmark-specific
+    bit of an otherwise generic argv)."""
     inference_arg = "both" if set(strategies) == {"llm", "codeact"} else strategies[0]
     argv = [
         sys.executable,
@@ -196,7 +197,7 @@ def run(
     return summary
 
 
-def completed_task_ids(logs_root, run_label: str, strategies) -> set[str]:
+def completed_task_ids(logs_root, run_label: str, strategies, *, benchmark: str | None = None) -> set[str]:
     """Task ids already finished for ``run_label`` under EVERY requested strategy.
 
     The launcher skips these so a re-run only does what is missing — an interrupted
@@ -208,6 +209,18 @@ def completed_task_ids(logs_root, run_label: str, strategies) -> set[str]:
     Identity comes from ``RunConfig.label()``, recomputed from each folder's recorded
     ``config`` block — so changing the model, the seed, the summary rounds, the sampling
     or any prompt version yields a different label and correctly re-runs from scratch.
+
+    The label carries **no benchmark**, and all three benchmarks write into the one
+    ``logs/r3con/`` root — so pass ``benchmark`` to scope the scan. It is the display
+    name each ``run_task`` stamps into its manifest (``loong.NAME`` == ``"Loong"``,
+    ``"CorpusQA"``, ``"Dracula"``): a folder then counts only if its manifest's
+    ``benchmark`` field equals it — and a folder that records no benchmark at all cannot
+    be attributed to one, so a scoped scan never lets it mark a task done.
+    ``benchmark=None`` keeps the unscoped scan — every folder under ``logs_root``,
+    matched on the label alone.
+
+    A folder whose ``manifest.json`` is missing, unreadable, or carries a config block
+    this ``RunConfig`` no longer accepts is skipped, never fatal.
     """
     from evals.r3con.pipeline.config import RunConfig
 
@@ -220,6 +233,8 @@ def completed_task_ids(logs_root, run_label: str, strategies) -> set[str]:
             manifest = json.loads((folder / "manifest.json").read_text())
             if RunConfig(**manifest["config"]).label() != run_label:
                 continue
+            if benchmark is not None and manifest.get("benchmark") != benchmark:
+                continue  # another benchmark's folder, or one we cannot attribute
         except (OSError, ValueError, KeyError, TypeError):
             continue  # no/!unreadable manifest, or a legacy config block -> not a match
         task_id = manifest.get("task_id")

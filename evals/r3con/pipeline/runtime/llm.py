@@ -5,6 +5,9 @@ from typing import TYPE_CHECKING, Any
 import litellm
 from pydantic import BaseModel
 
+# The canonical, defensive usage-object reader the baselines use — reused so R3Con
+# captures the same fields, in the same shape, from the same provider objects.
+from evals.llm.usage import _usage_to_dict
 from evals.r3con.pipeline.logging_setup import get_logger
 from evals.r3con.pipeline.settings import settings
 
@@ -72,9 +75,10 @@ def litellm_chat_completion_full(
     If ``schema`` is provided, it must be a Pydantic ``BaseModel`` class.
 
     If ``run`` is provided, a :class:`evals.r3con.pipeline.runs.StepRecord` is appended
-    to it with the request messages, response content, tokens, and ``kind``
-    label. Pass ``kind="retry"`` (or another custom label) on retry attempts
-    so the transcript renders them as a labeled block.
+    to it with the request messages, response content, the ``{prompt, completion,
+    total}`` token summary, the responding model and its full provider usage dict,
+    and the ``kind`` label. Pass ``kind="retry"`` (or another custom label) on retry
+    attempts so the transcript renders them as a labeled block.
     """
 
     if messages is not None:
@@ -128,6 +132,8 @@ def litellm_chat_completion_full(
             response=_extract_response_dict(response),
             schema=request.get("response_format"),
             tokens=_extract_tokens(response),
+            model=_extract_model(response, model),
+            usage=_extract_usage(response),
         )
 
     return response
@@ -229,7 +235,12 @@ def _extract_response_dict(response: Any) -> dict[str, Any]:
 
 
 def _extract_tokens(response: Any) -> dict[str, int] | None:
-    """Pull token counts out of a LiteLLM response, normalized to {prompt, completion, total}."""
+    """Pull token counts out of a LiteLLM response, normalized to {prompt, completion, total}.
+
+    The compact summary each stage's ``result.json`` aggregates. The *complete* cost
+    record — every provider field, incl. nested ``*_tokens_details`` — is captured
+    separately by :func:`_extract_usage`; this one stays three numbers on purpose.
+    """
     usage = getattr(response, "usage", None)
     if usage is None:
         return None
@@ -238,5 +249,31 @@ def _extract_tokens(response: Any) -> dict[str, int] | None:
         "completion": int(getattr(usage, "completion_tokens", 0) or 0),
         "total": int(getattr(usage, "total_tokens", 0) or 0),
     }
+
+
+def _extract_usage(response: Any) -> dict[str, Any] | None:
+    """The response's FULL usage object as a plain dict, or None if it carries none.
+
+    Keeps every field the provider reported — including the nested
+    ``prompt_tokens_details`` / ``completion_tokens_details`` counters (cached and
+    reasoning tokens) that the ``{prompt, completion, total}`` summary drops — so a
+    task's cost record is comparable field-for-field with the baselines'.
+    Best-effort: capture must never break the LLM call, so any surprise from an
+    unfamiliar response object yields None rather than an exception.
+    """
+    try:
+        return _usage_to_dict(getattr(response, "usage", None))
+    except Exception:  # noqa: BLE001 — capture must never break the call
+        return None
+
+
+def _extract_model(response: Any, requested: str) -> str:
+    """The model that actually produced the tokens (``response.model``), falling back
+    to the requested id when the response doesn't say. Matches how the baselines key
+    their per-model token totals. Never raises."""
+    try:
+        return getattr(response, "model", None) or requested
+    except Exception:  # noqa: BLE001 — capture must never break the call
+        return requested
 
 

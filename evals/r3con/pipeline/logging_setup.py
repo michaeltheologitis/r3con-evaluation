@@ -1,4 +1,4 @@
-"""Standard `logging` for the pipeline — replaces the old ad-hoc stdout printer.
+"""Standard `logging` for the pipeline.
 
 Library modules log through ``get_logger(...)``; the CLI entry points
 (``scripts/r3con/<benchmark>/{run,run_task}.py``) call ``configure_logging()`` once at

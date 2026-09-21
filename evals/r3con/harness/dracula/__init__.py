@@ -43,11 +43,11 @@ def list_task_ids(*, limit: int | None = None) -> list[str]:
 
 
 def load(task_id: str) -> TaskInput:
-    """The ``question`` + the full 45-document corpus for one task.
+    """The ``question`` + the full 46-document corpus for one task.
 
     There is no instruction/output-requirements or options block — the question is self-contained,
     so the composed ``task`` is just the question. ``documents`` is the whole corpus (every Dracula
-    question reasons over all 45 in-world documents), returned in the loader's fixed-seed order."""
+    question reasons over all 46 in-world documents), returned in the loader's fixed-seed order."""
     question, docs = _mod().get_task(task_id)
     return TaskInput(task=question, documents=list(docs))
 

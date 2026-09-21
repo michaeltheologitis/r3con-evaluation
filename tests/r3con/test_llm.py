@@ -1,7 +1,8 @@
-"""Tests for `evals.r3con.pipeline.runtime.llm` — strict-object schema rewriting + the
-num_retries forwarding into litellm.completion.
+"""Tests for `evals.r3con.pipeline.runtime.llm` — strict-object schema rewriting, the
+num_retries forwarding into litellm.completion, the empty-structured-output re-roll, and
+the per-call token-cost capture.
 
-Run with:  uv run python tests/unit/test_llm.py
+Run with:  uv run pytest tests/r3con/test_llm.py
 """
 
 from __future__ import annotations
@@ -215,6 +216,106 @@ def test_structured_success_first_try_does_not_reroll() -> None:
         restore()
     assert out.x == 1 and len(seen) == 1
     assert seen[0].get("seed") == 5  # unperturbed on the first try
+
+
+# ---------- per-call usage capture ----------
+
+
+class _Usage:
+    """A provider usage object, pydantic-style (``model_dump``) like LiteLLM's."""
+
+    def __init__(self, **fields):
+        self.__dict__.update(fields)
+
+    def model_dump(self):
+        return dict(self.__dict__)
+
+
+class _RespWithUsage:
+    def __init__(self, usage, model="gpt-5.4-nano-2026-01-01"):
+        self.choices = [_Choice("hi")]
+        self.usage = usage
+        self.model = model
+
+
+class _RecordingRun:
+    """Stands in for a StageRun: records the kwargs of every add_step."""
+
+    def __init__(self):
+        self.steps: list[dict] = []
+
+    def add_step(self, **kw):
+        self.steps.append(kw)
+        return kw
+
+
+def _fixed_completion(response):
+    """Monkeypatch litellm.completion to return `response`; returns a restore fn."""
+    orig = llm_mod.litellm.completion
+    llm_mod.litellm.completion = lambda **kw: response
+    return lambda: setattr(llm_mod.litellm, "completion", orig)
+
+
+def test_full_usage_and_response_model_reach_add_step() -> None:
+    """The step keeps the WHOLE provider usage dict — nested ``*_tokens_details``
+    included — plus the model that actually produced the tokens, so a task's cost
+    record carries the same fields the baselines record. The compact ``tokens``
+    summary is unchanged alongside it."""
+    usage = _Usage(
+        prompt_tokens=100, completion_tokens=20, total_tokens=120,
+        prompt_tokens_details={"cached_tokens": 64},
+        completion_tokens_details={"reasoning_tokens": 12},
+    )
+    run = _RecordingRun()
+    restore = _fixed_completion(_RespWithUsage(usage))
+    try:
+        litellm_chat_completion_full(system_prompt="s", user_prompt="u",
+                                     model="openai/gpt-5.4-nano", run=run)
+    finally:
+        restore()
+    (step,) = run.steps
+    assert step["tokens"] == {"prompt": 100, "completion": 20, "total": 120}
+    assert step["usage"] == {
+        "prompt_tokens": 100, "completion_tokens": 20, "total_tokens": 120,
+        "prompt_tokens_details": {"cached_tokens": 64},
+        "completion_tokens_details": {"reasoning_tokens": 12},
+    }
+    # the responding model, not the requested route-prefixed id
+    assert step["model"] == "gpt-5.4-nano-2026-01-01"
+
+
+def test_usage_capture_survives_a_response_without_usage() -> None:
+    """A response carrying no usage records None rather than raising — capture must
+    never break the call — and the model falls back to the requested id."""
+    run = _RecordingRun()
+    restore = _sequence_completion([""])[0]  # _Resp has usage=None and no .model
+    try:
+        litellm_chat_completion_full(system_prompt="s", user_prompt="u",
+                                     model="hosted_vllm/x", run=run)
+    finally:
+        restore()
+    (step,) = run.steps
+    assert step["usage"] is None and step["tokens"] is None
+    assert step["model"] == "hosted_vllm/x"
+
+
+def test_usage_capture_survives_an_opaque_usage_object() -> None:
+    """An unfamiliar usage object (no ``model_dump``) still yields the canonical
+    counts instead of blowing up the call."""
+
+    class _Opaque:
+        prompt_tokens = 3
+        completion_tokens = 1
+        total_tokens = 4
+
+    run = _RecordingRun()
+    restore = _fixed_completion(_RespWithUsage(_Opaque(), model="m"))
+    try:
+        litellm_chat_completion_full(system_prompt="s", user_prompt="u", model="m", run=run)
+    finally:
+        restore()
+    (step,) = run.steps
+    assert step["usage"] == {"prompt_tokens": 3, "completion_tokens": 1, "total_tokens": 4}
 
 
 def test_sampling_params_reach_completion_request() -> None:

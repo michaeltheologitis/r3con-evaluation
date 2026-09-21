@@ -1,7 +1,7 @@
 """Tests for `evals.r3con.harness.runner` — the subprocess launcher + CLI scaffolding.
 
 The launcher is driven by a fake Popen so no real process spawns. Run with:
-uv run python tests/unit/test_runner.py
+uv run pytest tests/r3con/test_runner.py -q
 """
 
 from __future__ import annotations
@@ -319,17 +319,22 @@ def test_print_launch_summary() -> None:
 # ---------- resume scan ----------
 
 
-def _run_folder(root, name: str, *, label_cfg: dict, task_id: str, strategies: dict) -> None:
+def _run_folder(root, name: str, *, label_cfg: dict, task_id: str, strategies: dict,
+                benchmark: str | None = "Loong") -> None:
     """A fake run folder: manifest.json + one inference/<strategy>/ per entry.
 
     ``strategies`` maps a strategy name to "result" (answered), "ctx" (a settled
-    context-window error) or anything else (a transient error).
+    context-window error) or anything else (a transient error). ``benchmark`` is the
+    display name the real ``run_task`` stamps ("Loong" / "CorpusQA" / "Dracula");
+    ``None`` writes a manifest with no ``benchmark`` key, like a folder from before the
+    field existed.
     """
     folder = root / name
     (folder / "inference").mkdir(parents=True, exist_ok=True)
-    (folder / "manifest.json").write_text(
-        json.dumps({"task_id": task_id, "benchmark": "Loong", "config": label_cfg})
-    )
+    manifest: dict = {"task_id": task_id, "config": label_cfg}
+    if benchmark is not None:
+        manifest["benchmark"] = benchmark
+    (folder / "manifest.json").write_text(json.dumps(manifest))
     for strategy, kind in strategies.items():
         d = folder / "inference" / strategy
         d.mkdir(parents=True, exist_ok=True)
@@ -374,3 +379,58 @@ def test_completed_task_ids_resume_semantics(tmp_path) -> None:
     }
     # a missing log root is empty, not an error
     assert completed_task_ids(tmp_path / "nope", label, ("llm",)) == set()
+
+
+def test_completed_task_ids_scopes_to_benchmark(tmp_path) -> None:
+    """All three benchmarks share one logs/r3con/ root and the run label carries no
+    benchmark, so the scan must be scoped by the manifest's ``benchmark`` field."""
+    from evals.r3con.pipeline.config import load_config
+
+    cfg = load_config("default")
+    label, block = cfg.label(), cfg.model_dump()
+
+    # same run label, different benchmarks
+    _run_folder(tmp_path, "a", label_cfg=block, task_id="t-loong", benchmark="Loong",
+                strategies={"codeact": "result"})
+    _run_folder(tmp_path, "b", label_cfg=block, task_id="t-corpusqa", benchmark="CorpusQA",
+                strategies={"codeact": "result"})
+
+    assert completed_task_ids(tmp_path, label, ("codeact",), benchmark="Loong") == {"t-loong"}
+    assert completed_task_ids(tmp_path, label, ("codeact",), benchmark="CorpusQA") == {"t-corpusqa"}
+    assert completed_task_ids(tmp_path, label, ("codeact",), benchmark="Dracula") == set()
+    # omitting `benchmark` keeps the old unscoped behavior
+    assert completed_task_ids(tmp_path, label, ("codeact",)) == {"t-loong", "t-corpusqa"}
+
+
+def test_completed_task_ids_benchmarks_do_not_cross_contaminate(tmp_path) -> None:
+    """The three task-id spaces happening not to collide is an accident, not a guarantee:
+    the SAME id finished under one benchmark must not mark the other's task done."""
+    from evals.r3con.pipeline.config import load_config
+
+    cfg = load_config("default")
+    label, block = cfg.label(), cfg.model_dump()
+
+    _run_folder(tmp_path, "a", label_cfg=block, task_id="shared-id", benchmark="Loong",
+                strategies={"codeact": "result"})
+    _run_folder(tmp_path, "b", label_cfg=block, task_id="shared-id", benchmark="CorpusQA",
+                strategies={"codeact": "boom"})  # transient error -> not done
+
+    assert completed_task_ids(tmp_path, label, ("codeact",), benchmark="Loong") == {"shared-id"}
+    assert completed_task_ids(tmp_path, label, ("codeact",), benchmark="CorpusQA") == set()
+
+
+def test_completed_task_ids_unattributable_folder_excluded_when_scoped(tmp_path) -> None:
+    """A folder with no ``benchmark`` field cannot be attributed to a benchmark, so a
+    scoped scan must not let it mark a task done (re-running costs money; silently
+    skipping the wrong benchmark's task loses a result)."""
+    from evals.r3con.pipeline.config import load_config
+
+    cfg = load_config("default")
+    label, block = cfg.label(), cfg.model_dump()
+
+    _run_folder(tmp_path, "a", label_cfg=block, task_id="t-nameless", benchmark=None,
+                strategies={"codeact": "result"})
+
+    assert completed_task_ids(tmp_path, label, ("codeact",), benchmark="Loong") == set()
+    # unscoped, it still counts — exactly as it did before the field existed
+    assert completed_task_ids(tmp_path, label, ("codeact",)) == {"t-nameless"}

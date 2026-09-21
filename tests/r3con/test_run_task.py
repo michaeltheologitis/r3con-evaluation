@@ -4,7 +4,7 @@ run_task writes into a flat ``logs/<run-folder>/`` (the folder is chosen by the
 caller / runner, not derived from the config) and records the full parameter snapshot:
 a ``config`` block (the experiment identity) + a ``settings`` block (runtime knobs).
 
-Run with:  uv run python tests/unit/test_run_task.py
+Run with:  uv run pytest tests/r3con/test_run_task.py
 """
 
 from __future__ import annotations
@@ -19,6 +19,7 @@ from evals.r3con.pipeline.config import RunConfig
 from evals.r3con.harness import loong
 from evals.r3con.harness.loong import run_task as rt_mod
 from evals.r3con.harness.loong.run_task import run_task
+from evals.r3con.pipeline.runs import StageRun, TaskLogger
 from evals.r3con.pipeline.settings import settings
 
 _PROMPTS = {"summaries": "v3", "proposer": "v3", "extractor": "v2",
@@ -108,6 +109,80 @@ def test_passes_config_and_transport_through_to_gr() -> None:
     assert captured["config"].model == "zzz"
     assert captured["api_base"] == "http://x" and captured["api_key"] == "k"
     assert captured["strategies"] == ("codeact",)
+
+
+def _gr_that_burns_tokens(*, raises: Exception | None = None):
+    """A fake gr_answer that records one LLM call against the task logger (as every
+    real stage does) and then either answers or blows up."""
+
+    def fake(**kw):
+        run = StageRun(stage="summaries", task_logger=kw["task_logger"], model="m")
+        run.add_step(
+            kind="summary-r1-d0", messages=[], response={"role": "assistant", "content": "s"},
+            tokens={"prompt": 30, "completion": 4, "total": 34}, model="m",
+            usage={"prompt_tokens": 30, "completion_tokens": 4, "total_tokens": 34,
+                   "completion_tokens_details": {"reasoning_tokens": 2}},
+        )
+        if raises is not None:
+            raise raises
+        return {"codeact": ("ans", None)}
+
+    return fake
+
+
+def test_manifest_gains_usage_block() -> None:
+    """The manifest is re-written at the end of the run with the task's complete token
+    cost, in the same ``{total, calls}`` shape the baselines write — and the identity
+    fields written at t=0 survive the rewrite."""
+    with _patched(answer_or_raise={"codeact": ("ans", None)}) as root:
+        rt_mod.gr_answer = _gr_that_burns_tokens()  # restored by _patched's finally
+        run_task("t1", config=_cfg(), run_folder="RFu", strategies=("codeact",))
+        man = json.loads((root / "RFu" / "manifest.json").read_text())
+    assert man["usage"]["total"]["m"] == {
+        "num_calls": 1, "prompt_tokens": 30, "completion_tokens": 4, "total_tokens": 34,
+        "completion_tokens_details": {"reasoning_tokens": 2},
+    }
+    assert man["usage"]["calls"][0]["model"] == "m"
+    assert man["task_id"] == "t1" and man["gold"] == "GOLD" and "config" in man
+
+
+def test_manifest_usage_present_even_when_the_pipeline_raises() -> None:
+    """A crashed task still reports what it burned before it died."""
+    with _patched(answer_or_raise={"codeact": ("ans", None)}) as root:
+        rt_mod.gr_answer = _gr_that_burns_tokens(raises=ValueError("proposer blew up"))
+        outcome = run_task("t1", config=_cfg(), run_folder="RFx", strategies=("codeact",))
+        man = json.loads((root / "RFx" / "manifest.json").read_text())
+    assert outcome.failed
+    assert man["usage"]["total"]["m"]["num_calls"] == 1
+    assert man["usage"]["total"]["m"]["total_tokens"] == 34
+
+
+def test_usage_rollup_failure_does_not_sink_a_task_that_answered() -> None:
+    """Cost accounting is bookkeeping: if the roll-up (or the manifest rewrite) blows up,
+    the task must still report its answer, and the failure must be discoverable on disk.
+    Otherwise a run that genuinely answered gets recorded as a crash."""
+    with _patched(answer_or_raise={"codeact": ("ans", None)}) as root:
+        orig_rollup = TaskLogger.usage_rollup
+        TaskLogger.usage_rollup = lambda self: (_ for _ in ()).throw(RuntimeError("rollup boom"))
+        try:
+            outcome = run_task("t1", config=_cfg(), run_folder="RFb", strategies=("codeact",))
+        finally:
+            TaskLogger.usage_rollup = orig_rollup
+        man = json.loads((root / "RFb" / "manifest.json").read_text())
+        err = (root / "RFb" / "usage_error.txt").read_text()
+
+    assert not outcome.failed                       # the answer survived
+    assert outcome.results["codeact"] == ("ans", None)
+    assert "usage" not in man                       # t=0 manifest intact, no usage block
+    assert man["task_id"] == "t1"
+    assert "rollup boom" in err                     # and the failure is on disk
+
+
+def test_manifest_usage_is_empty_when_no_call_was_made() -> None:
+    with _patched(answer_or_raise={"codeact": ("ans", None)}) as root:
+        run_task("t1", config=_cfg(), run_folder="RFe", strategies=("codeact",))
+        man = json.loads((root / "RFe" / "manifest.json").read_text())
+    assert man["usage"] == {"total": {}, "calls": []}
 
 
 def test_top_level_failure_writes_error_txt() -> None:

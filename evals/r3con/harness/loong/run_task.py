@@ -11,6 +11,7 @@ from __future__ import annotations
 import datetime
 import traceback
 from dataclasses import dataclass, field
+from typing import Any
 
 from evals.r3con.pipeline.config import RunConfig, normalize_model_name
 from evals.r3con.harness import loong
@@ -28,9 +29,11 @@ def write_task_manifest(
     config: RunConfig,
     strategies: tuple[str, ...],
     inference_timeout_s: float | None,
-) -> None:
+) -> dict[str, Any]:
     """Write ``<run-folder>/manifest.json`` — the task identity card AND the full
     parameter snapshot, so a result on disk records *everything* it depended on.
+    Returns the dict it wrote, so the caller can re-write it with the run's token
+    cost once the run is over.
 
     The ``config`` block is the resolved :class:`RunConfig` (everything that shapes
     the output); the run label is **recomputed** from it (``RunConfig.label()``) rather than persisted,
@@ -45,25 +48,24 @@ def write_task_manifest(
     overrides = config_block.get("overrides") or {}
     if "model" in overrides:
         overrides["model"] = normalize_model_name(overrides["model"])
-    log.write_json(
-        "manifest",
-        {
-            "benchmark": loong.NAME,
-            "task_id": task_id,
-            "run_folder": log.folder,
-            "question": ti.task,
-            "gold": loong.gold(task_id),
-            "n_docs": len(ti.documents),
-            "context_chars": sum(len(d) for d in ti.documents),
-            "strategies": list(strategies),
-            "inference_timeout_s": inference_timeout_s,
-            # --- what shapes the output (the experiment identity) ---
-            "config": config_block,
-            # --- runtime knobs (parallelism / resilience) ---
-            "settings": settings_snapshot(),
-            "created": datetime.datetime.now(datetime.UTC).isoformat(timespec="seconds"),
-        },
-    )
+    manifest: dict[str, Any] = {
+        "benchmark": loong.NAME,
+        "task_id": task_id,
+        "run_folder": log.folder,
+        "question": ti.task,
+        "gold": loong.gold(task_id),
+        "n_docs": len(ti.documents),
+        "context_chars": sum(len(d) for d in ti.documents),
+        "strategies": list(strategies),
+        "inference_timeout_s": inference_timeout_s,
+        # --- what shapes the output (the experiment identity) ---
+        "config": config_block,
+        # --- runtime knobs (parallelism / resilience) ---
+        "settings": settings_snapshot(),
+        "created": datetime.datetime.now(datetime.UTC).isoformat(timespec="seconds"),
+    }
+    log.write_json("manifest", manifest)
+    return manifest
 
 
 @dataclass
@@ -87,11 +89,14 @@ def run_task(
     api_key: str | None = None,
 ) -> RunTaskOutcome:
     """Run one Loong task end-to-end through R3Con under ``config``; write its artifacts
-    into ``logs/<run_folder>/``."""
+    into ``logs/<run_folder>/``.
+
+    The manifest is written twice: once up front (so a crashed task is discoverable
+    from t=0) and once at the end, with the task's complete token cost added."""
     ti = loong.load(task_id)
     log = TaskLogger(run_folder, task_id=task_id)
 
-    write_task_manifest(
+    manifest = write_task_manifest(
         log, task_id, ti, config=config, strategies=strategies,
         inference_timeout_s=DEFAULT_EXEC_TIMEOUT_S,
     )
@@ -111,4 +116,15 @@ def run_task(
             (err_dir / "error.txt").write_text(traceback.format_exc())
             outcome.results[strategy] = ("", errmsg)
         outcome.failed = True
+
+    # Re-write the manifest now the run is over, adding `usage` — the task's whole
+    # token cost, in the same shape the baselines record. Both paths land here, so a
+    # crashed task still reports what it burned before it died. Accounting must never
+    # sink a task that produced an answer, so a roll-up/write failure is recorded beside
+    # the manifest and swallowed rather than raised out of `run_task`.
+    try:
+        manifest["usage"] = log.usage_rollup()
+        log.write_json("manifest", manifest)
+    except Exception:  # noqa: BLE001 — see above; the t=0 manifest is already on disk
+        (log.dir / "usage_error.txt").write_text(traceback.format_exc())
     return outcome

@@ -61,9 +61,11 @@ def main(argv: list[str] | None = None) -> int:
 
     # Resume by default: skip tasks already finished for this exact run identity
     # (`config.label()`) under every requested strategy, so a re-run only does what is
-    # missing. `--force` re-runs them anyway.
+    # missing. `benchmark=` scopes the scan to Loong folders — the label carries no
+    # benchmark and all three share one logs/r3con/. `--force` re-runs them anyway.
     n_total = len(task_ids)
-    done = runner.completed_task_ids(settings.LOGS_DIR, config.label(), strategies)
+    done = runner.completed_task_ids(settings.LOGS_DIR, config.label(), strategies,
+                                     benchmark=loong.NAME)
     n_done = sum(1 for t in task_ids if t in done)
     if args.force:
         print(f"Tasks: {n_total} requested · {n_done} already done · re-running ALL {n_total} (--force).")

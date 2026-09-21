@@ -59,9 +59,9 @@ parallel, `--doc-workers` is documents in parallel *within* a task — peak load
 endpoint is roughly the product. `--verbose` streams per-stage progress into each run's
 `run_task.log`. `scripts/r3con/<benchmark>/run_task.py` runs a single task by hand.
 
-Re-running picks up where it left off: tasks already finished for this exact run identity
-under every requested strategy are skipped, so an interrupted 1,600-task run doesn't pay
-twice. `--force` re-runs them anyway.
+Re-running picks up where it left off: tasks already finished for this benchmark under
+this exact run identity, under every requested strategy, are skipped, so an interrupted
+1,600-task run doesn't pay twice. `--force` re-runs them anyway.
 
 ## The run config is the experiment identity
 
@@ -98,14 +98,25 @@ One folder per task-run under `logs/r3con/`, holding every intermediate the meth
 ```
 logs/r3con/<UTC-timestamp>_<hex>/
   manifest.json                  benchmark, task_id, question, gold, n_docs, a `config`
-                                 block (the resolved RunConfig) and a `settings` block
+                                 block (the resolved RunConfig), a `settings` block, and
+                                 a `usage` block: the task's complete token cost
   summaries/result.json          every round's per-document summary
   proposer/result.json           the proposed schema + the reasoning behind it
   extractor/result.json          the merged parse + which document each record came from
   inference/{llm,codeact}/       the answer, the full turn-by-turn transcript for codeact
-  */calls.json                   every LLM call: prompt, response, tokens
+  */calls.json                   every LLM call: prompt, response, token summary, the
+                                 responding model, and its full provider usage
   run_task.log
 ```
+
+The manifest is written before the first LLM call — so a crashed task is still
+discoverable — and re-written when the task ends, success or crash, to add `usage`. That
+block is the same `{"total": {model: {num_calls, prompt_tokens, completion_tokens,
+total_tokens, …nested *_tokens_details}}, "calls": [{model, usage}]}` shape every baseline
+in this repo records, summed across every stage that ran (summaries, proposer, extractor,
+each requested inference strategy — every codeact turn, every retry), so R3Con's cost and
+a baseline's are measured on the same fields. The per-call detail behind it is in each
+stage's `calls.json`.
 
 The folder name carries no identity — the benchmark and the full run config live inside
 the manifest. Runs accumulate rather than overwrite. Reading one of these folders is the

@@ -6,8 +6,8 @@ document**, all documents in parallel (bounded by
 :func:`evals.r3con.pipeline.settings.active_doc_workers`):
 
 - The **system prompt** carries the task, the proposed schema source, and the
-  collection's final summaries (all documents) — the cross-document context that
-  used to come from the rolling per-chunk ``update_context`` sub-stage.
+  collection's final summaries (all documents) — the cross-document context, so
+  each document is extracted in light of what the rest of the collection says.
 - The **user message** is the document being extracted, whole.
 
 Each document yields one populated ``Parse``; the per-document parses merge into

@@ -16,7 +16,11 @@ Layout per ``logs/<run-folder>/``:
   runtime knobs). Written first, so a crashed task is still discoverable. The run label
   is **not** stored — it is recomputed from the ``config`` block
   (:meth:`evals.r3con.pipeline.config.RunConfig.label`), so a label-format change never
-  invalidates a folder already on disk.
+  invalidates a folder already on disk. Each benchmark's ``run_task`` re-writes the
+  manifest when the task ends (success *or* crash), adding a ``usage`` block — the
+  complete per-task token cost, rolled up across every stage by
+  :meth:`TaskLogger.usage_rollup` in the same ``{total, calls}`` shape the baselines
+  record.
 - ``summaries/`` — ``result.json`` (``{n_rounds, n_docs, rounds: [{round, summaries}],
   totals}`` — per round, ``summaries[i]`` aligns to ``documents[i]``; the last round
   feeds downstream) + ``calls.json`` (one per ``summarize_one``, tagged
@@ -38,9 +42,12 @@ Two layers in code:
   ``"inference/codeact/result"``).
 - ``StageRun`` accumulates per-LLM-call ``StepRecord`` instances and on ``flush()``
   writes ``calls.json`` (the full per-call record — ``{step, kind, doc, chunk,
-  tokens, finish_reason, prompt, output}``) and, unless skipped, ``transcript.yaml``
-  (the readable message thread). Aggregate token totals are available via
-  ``compute_totals()`` so callers fold them into the stage's ``result.json``.
+  tokens, model, usage, finish_reason, prompt, output}``, where ``usage`` is the
+  provider's whole usage object incl. nested ``*_tokens_details``) and, unless
+  skipped, ``transcript.yaml`` (the readable message thread). Aggregate token totals
+  are available via ``compute_totals()`` so callers fold them into the stage's
+  ``result.json``. Every ``StageRun`` registers itself with its ``TaskLogger`` at
+  construction, so ``TaskLogger.usage_rollup()`` can sum the whole task's cost.
 """
 
 from __future__ import annotations
@@ -56,6 +63,10 @@ from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel
+
+# The canonical recursive numeric sum behind every baseline's ``total`` rollup —
+# reused verbatim so R3Con's per-task usage numbers are byte-comparable with theirs.
+from evals.llm.usage import _merge_numeric
 
 # ``normalize_model_name`` now lives in ``evals.r3con.pipeline.config`` (it's a model-identity helper
 # used by ``RunConfig.label()`` too); re-exported here so ``evals.r3con.pipeline.runs.normalize_model_name``
@@ -99,6 +110,10 @@ class TaskLogger:
     Parent directories are auto-created. The extension is appended from the method
     name. ``data`` may be a Pydantic ``BaseModel`` / class, a ``dict``/``list``, or
     any JSON-serializable value; non-serializable values fall back to ``repr``.
+
+    It also collects every :class:`StageRun` opened against it (each registers itself
+    at construction), which is what lets :meth:`usage_rollup` report one task's whole
+    token cost in one place.
     """
 
     def __init__(self, folder: str, *, task_id: str | None = None, root: Path | None = None) -> None:
@@ -107,6 +122,51 @@ class TaskLogger:
         base = root or settings.LOGS_DIR
         self.dir = base / folder
         self.dir.mkdir(parents=True, exist_ok=True)
+        # Stage runs register here from their own constructors; stages are built
+        # sequentially today, but the list is lock-guarded so it stays correct if one
+        # is ever opened from a worker thread.
+        self.stage_runs: list["StageRun"] = []
+        self._lock = threading.Lock()
+
+    def register_stage_run(self, run: "StageRun") -> None:
+        """Record a stage run so its calls count toward :meth:`usage_rollup`.
+        Called by :meth:`StageRun.__init__` — callers don't do this themselves."""
+        with self._lock:
+            self.stage_runs.append(run)
+
+    def usage_rollup(self) -> dict[str, Any]:
+        """The whole task's token cost, in the harness-standard shape every baseline
+        writes into its ``manifest.json``::
+
+            {"total": {"<model>": {"num_calls", "prompt_tokens", "completion_tokens",
+                                   "total_tokens", "prompt_tokens_details": {...}, ...}},
+             "calls": [{"model": "<model>", "usage": {...}}, ...]}
+
+        Covers **every** registered stage — summaries, proposer, extractor,
+        ``inference/llm`` and ``inference/codeact`` (including each codeact turn and
+        its max-turns fallback call) — plus every retry, since a retry is its own
+        recorded step. The per-model rollup sums the provider usage recursively
+        (:func:`evals.llm.usage._merge_numeric`, the same arithmetic the baselines
+        use), so nested ``*_tokens_details`` counters accumulate too.
+
+        The model key is the one recorded on the step (what actually produced the
+        tokens), falling back to the stage's configured model. A step whose response
+        carried no usage still counts as a call — it happened, and dropping it would
+        understate ``num_calls``.
+        """
+        with self._lock:
+            stage_runs = list(self.stage_runs)
+        total: dict[str, Any] = {}
+        calls: list[dict[str, Any]] = []
+        for run in stage_runs:
+            for step in run.snapshot_steps():
+                model = step.model or run.model or "<unknown>"
+                calls.append({"model": model, "usage": step.usage})
+                bucket = total.setdefault(model, {"num_calls": 0})
+                bucket["num_calls"] += 1
+                if step.usage:
+                    _merge_numeric(bucket, step.usage)
+        return {"total": total, "calls": calls}
 
     def _path(self, name: str, ext: str) -> Path:
         path = self.dir / f"{name}.{ext}"
@@ -141,6 +201,13 @@ class StepRecord:
     response: dict[str, Any]  # {"role": ..., "content": ..., "finish_reason": ...}
     schema: dict[str, Any] | None = None
     tokens: dict[str, int] | None = None  # {"prompt": int, "completion": int, "total": int}
+    # The model that actually produced the tokens (the response's, not necessarily the
+    # requested id) and the provider's FULL usage object as a plain dict — every token
+    # field, incl. nested ``*_tokens_details`` (cached_tokens, reasoning_tokens, …).
+    # ``tokens`` above stays the three-number summary the stage ``result.json`` reports;
+    # this pair is what ``TaskLogger.usage_rollup`` sums into the per-task cost record.
+    model: str | None = None
+    usage: dict[str, Any] | None = None
 
 
 class StageRun:
@@ -168,6 +235,9 @@ class StageRun:
         self._lock = threading.Lock()
         self.dir = task_logger.dir / stage
         self.dir.mkdir(parents=True, exist_ok=True)
+        # Register with the task logger so this stage's calls are part of the task's
+        # usage rollup — no stage has to remember to opt in.
+        task_logger.register_stage_run(self)
 
     def add_step(
         self,
@@ -177,9 +247,16 @@ class StageRun:
         response: dict[str, Any],
         schema: dict[str, Any] | None = None,
         tokens: dict[str, int] | None = None,
+        model: str | None = None,
+        usage: dict[str, Any] | None = None,
     ) -> StepRecord:
         """Record one step (thread-safe). Step numbers are assigned under a lock, in
-        completion order; each call's ``kind`` carries its own identity."""
+        completion order; each call's ``kind`` carries its own identity.
+
+        ``tokens`` is the ``{prompt, completion, total}`` summary the stage's
+        ``result.json`` aggregates; ``model`` + ``usage`` are the responding model and
+        its full provider usage dict, which feed
+        :meth:`TaskLogger.usage_rollup` and ride along in ``calls.json``."""
         with self._lock:
             step = StepRecord(
                 step=len(self.steps) + 1,
@@ -188,9 +265,18 @@ class StageRun:
                 response=dict(response),
                 schema=schema,
                 tokens=tokens,
+                model=model,
+                usage=usage,
             )
             self.steps.append(step)
         return step
+
+    def snapshot_steps(self) -> list[StepRecord]:
+        """A point-in-time copy of the recorded steps, taken under the same lock
+        ``add_step`` writes under — safe to read while a parallel doc fan-out is
+        still appending."""
+        with self._lock:
+            return list(self.steps)
 
     def flush(self, *, write_transcript: bool = True) -> Path:
         """Write ``calls.json`` (always) and, unless ``write_transcript=False``,
@@ -216,8 +302,11 @@ class StageRun:
 
     def _write_calls(self) -> Path:
         """Write ``calls.json`` — one entry per LLM call: ``{step, kind, doc, chunk,
-        tokens, finish_reason, prompt, output}``. ``doc``/``chunk`` are parsed from the
-        call ``kind`` (e.g. ``extract-d0``, ``summary-r1-d2``) when present."""
+        tokens, model, usage, finish_reason, prompt, output}``. ``doc``/``chunk`` are
+        parsed from the call ``kind`` (e.g. ``extract-d0``, ``summary-r1-d2``) when
+        present; ``usage`` is the provider's full usage object (incl. nested
+        ``*_tokens_details``), so the per-call cost is recoverable here in the same
+        detail the task-level rollup reports."""
         calls: list[dict[str, Any]] = []
         for s in self.steps:
             m = _DOC_CHUNK_RE.search(s.kind)
@@ -229,6 +318,8 @@ class StageRun:
                     "doc": int(m.group(1)) if m else None,
                     "chunk": int(m.group(2)) if (m and m.group(2)) else None,
                     "tokens": s.tokens,
+                    "model": s.model,
+                    "usage": s.usage,
                     "finish_reason": resp.get("finish_reason"),
                     "prompt": s.messages,
                     "output": resp.get("content"),

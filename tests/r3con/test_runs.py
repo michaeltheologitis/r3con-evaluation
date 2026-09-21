@@ -1,6 +1,6 @@
 """Tests for `evals.r3con.pipeline.runs.TaskLogger` and `StageRun` (bare-folder logging).
 
-Run with:  uv run python tests/unit/test_runs.py
+Run with:  uv run pytest tests/r3con/test_runs.py
 """
 
 from __future__ import annotations
@@ -257,6 +257,105 @@ def test_add_step_is_thread_safe() -> None:
             t.join()
         assert len(run.steps) == 50
         assert sorted(s.step for s in run.steps) == list(range(1, 51))
+
+
+# ----- per-task usage rollup -----
+
+
+def _usage(prompt: int, completion: int, *, cached: int = 0, reasoning: int = 0) -> dict:
+    """A provider-shaped usage dict: top-level counts + the nested detail counters."""
+    return {
+        "prompt_tokens": prompt,
+        "completion_tokens": completion,
+        "total_tokens": prompt + completion,
+        "prompt_tokens_details": {"cached_tokens": cached},
+        "completion_tokens_details": {"reasoning_tokens": reasoning},
+    }
+
+
+def test_calls_json_carries_model_and_full_usage() -> None:
+    """calls.json keeps the whole provider usage object (incl. nested details) and the
+    responding model, alongside the existing three-number ``tokens`` summary."""
+    with tempfile.TemporaryDirectory() as tmp:
+        task = TaskLogger("t", root=Path(tmp))
+        run = StageRun(stage="proposer", task_logger=task, model="openai/gpt-5.4-nano")
+        run.add_step(
+            messages=[{"role": "user", "content": "u"}], response=_msgs_assistant("a"),
+            tokens={"prompt": 10, "completion": 2, "total": 12},
+            model="gpt-5.4-nano-2026-01-01", usage=_usage(10, 2, cached=4, reasoning=1),
+        )
+        run.flush(write_transcript=False)
+        call = json.loads((run.dir / "calls.json").read_text())[0]
+        assert call["tokens"] == {"prompt": 10, "completion": 2, "total": 12}
+        assert call["model"] == "gpt-5.4-nano-2026-01-01"
+        assert call["usage"]["prompt_tokens_details"] == {"cached_tokens": 4}
+        assert call["usage"]["completion_tokens_details"] == {"reasoning_tokens": 1}
+        # existing keys survive untouched
+        assert call["step"] == 1 and call["output"] == "a" and call["finish_reason"] == "stop"
+
+
+def test_stage_runs_register_with_task_logger() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        task = TaskLogger("t", root=Path(tmp))
+        a = StageRun(stage="summaries", task_logger=task)
+        b = StageRun(stage="inference/codeact", task_logger=task)
+        assert task.stage_runs == [a, b]
+
+
+def test_usage_rollup_across_stages() -> None:
+    """The task-level rollup spans every stage and matches the baselines' shape:
+    per-model totals (with nested details summed) + one entry per call."""
+    with tempfile.TemporaryDirectory() as tmp:
+        task = TaskLogger("t", root=Path(tmp))
+        summaries = StageRun(stage="summaries", task_logger=task, model="req/m")
+        codeact = StageRun(stage="inference/codeact", task_logger=task, model="req/m")
+        summaries.add_step(kind="summary-r1-d0", messages=[], response=_msgs_assistant(),
+                           model="m", usage=_usage(100, 10, cached=50, reasoning=3))
+        summaries.add_step(kind="summary-r1-d1", messages=[], response=_msgs_assistant(),
+                           model="m", usage=_usage(200, 20, cached=25, reasoning=7))
+        codeact.add_step(kind="turn-1", messages=[], response=_msgs_assistant(),
+                         model="other", usage=_usage(5, 1))
+
+        rollup = task.usage_rollup()
+        assert set(rollup) == {"total", "calls"}
+        assert rollup["total"]["m"] == {
+            "num_calls": 2,
+            "prompt_tokens": 300,
+            "completion_tokens": 30,
+            "total_tokens": 330,
+            "prompt_tokens_details": {"cached_tokens": 75},
+            "completion_tokens_details": {"reasoning_tokens": 10},
+        }
+        assert rollup["total"]["other"]["num_calls"] == 1
+        assert rollup["total"]["other"]["total_tokens"] == 6
+        assert [c["model"] for c in rollup["calls"]] == ["m", "m", "other"]
+        assert rollup["calls"][0]["usage"]["prompt_tokens"] == 100
+
+
+def test_usage_rollup_counts_a_step_without_usage() -> None:
+    """A call whose response carried no usage still happened — it counts toward
+    num_calls (keyed by the stage's model when the step doesn't name one)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        task = TaskLogger("t", root=Path(tmp))
+        run = StageRun(stage="proposer", task_logger=task, model="stage-model")
+        run.add_step(messages=[], response=_msgs_assistant(), model="m", usage=_usage(7, 3))
+        run.add_step(kind="retry", messages=[], response=_msgs_assistant())  # no model, no usage
+        rollup = task.usage_rollup()
+        assert rollup["total"]["m"] == {
+            "num_calls": 1, "prompt_tokens": 7, "completion_tokens": 3, "total_tokens": 10,
+            "prompt_tokens_details": {"cached_tokens": 0},
+            "completion_tokens_details": {"reasoning_tokens": 0},
+        }
+        assert rollup["total"]["stage-model"] == {"num_calls": 1}
+        assert rollup["calls"][1] == {"model": "stage-model", "usage": None}
+
+
+def test_usage_rollup_empty_when_nothing_ran() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        task = TaskLogger("t", root=Path(tmp))
+        assert task.usage_rollup() == {"total": {}, "calls": []}
+        StageRun(stage="summaries", task_logger=task)
+        assert task.usage_rollup() == {"total": {}, "calls": []}
 
 
 # ----- helpers -----

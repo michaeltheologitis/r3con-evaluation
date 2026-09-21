@@ -44,9 +44,12 @@ def main(argv: list[str] | None = None) -> int:
 
     strategies = runner.strategies_from_arg(args.inference)
 
-    # Resume by default — skip tasks already done for this exact run identity (scoped to Dracula).
+    # Resume by default — skip tasks already done for this exact run identity, scoped by
+    # `benchmark=` to folders whose manifest records Dracula (the run label carries no
+    # benchmark and all three benchmarks share one logs/r3con/).
     n_total = len(task_ids)
-    done = runner.completed_task_ids(settings.LOGS_DIR, config.label(), strategies)
+    done = runner.completed_task_ids(settings.LOGS_DIR, config.label(), strategies,
+                                     benchmark=dracula.NAME)
     n_done = sum(1 for t in task_ids if t in done)
     if args.force:
         print(f"Tasks: {n_total} requested · {n_done} already done · re-running ALL {n_total} (--force).")

@@ -2,7 +2,7 @@
 
 The summaries-pipeline runs the same LLM call across *every document in a
 collection in parallel* — once per document per summary round (stage 1) and
-once per document for extraction (stage 2). Both want the same thing: run up to
+once per document for extraction (stage 3). Both want the same thing: run up to
 ``max_workers`` calls concurrently, preserve input order in the results, and
 surface the first exception. This is that one helper.
 
