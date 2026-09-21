@@ -1,8 +1,6 @@
 # r3con-evaluation
 
-Three grounded-reasoning benchmarks, nine baselines, and R3Con (the method under
-evaluation), all on one shared contract. This repo runs methods and records what they
-produced. Scoring and figures live in a separate repo.
+Three benchmarks, nine baselines, and R3Con — the method under evaluation.
 
 ## Where things are
 
@@ -35,17 +33,10 @@ Other docs:
 ## Install
 
 ```bash
-uv sync --extra test                                  # harness + tests
-uv sync --extra test --extra r3con                    # ...plus the method
-uv sync --extra test --extra structrag --extra arag   # ...plus specific baselines
+uv sync --all-extras
 ```
 
-Each baseline that needs dependencies has its own extra (`structrag`, `arag`, `raptor`,
-`hipporag`, `memagent`, `codeact`, `rlms`); `readagent` and `claude-code` need none. All
-are co-installable.
-
-Put `OPENAI_API_KEY` in `.env`. The judges and every embedding call go to OpenAI;
-completions can go anywhere.
+Put `OPENAI_API_KEY` in `.env` — the judges and every embedding call go to OpenAI.
 
 ## Data
 

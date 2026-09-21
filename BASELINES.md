@@ -7,17 +7,17 @@ commit, license, what was changed — is in each `evals/baselines/<name>/PROVENA
 The benchmarks scatter a task's evidence across a bundle of documents, so the question
 that predicts most about a baseline's score is whether it reads all of them or a subset.
 
-| baseline | what it does | sees all docs | benchmarks | extra |
-| --- | --- | --- | --- | --- |
-| `readagent` | paginate → gist → re-read 1–2 pages | no (gists) | all three | none |
-| `memagent` | fold 5k-token chunks into a fixed 1k memory | all, but compressed | all three | `memagent` |
-| `raptor` | recursive summary tree, retrieve top-k | no | all three | `raptor` |
-| `hipporag` | OpenIE graph + Personalized PageRank | no | all three | `hipporag` |
-| `arag` | ReAct agent over search/read tools | no | all three | `arag` |
-| `structrag` | restructure every doc, then answer | yes | all three | `structrag` (optional) |
-| `codeact` | writes Python over the documents | yes | all three | `codeact` |
-| `rlm` | documents in a REPL, recursive sub-calls | yes | all three | `rlms` |
-| `claude-code` | `claude -p` over the docs as files | yes | loong, corpusqa | none |
+| baseline | what it does | sees all docs | benchmarks |
+| --- | --- | --- | --- |
+| `readagent` | paginate → gist → re-read 1–2 pages | no (gists) | all three |
+| `memagent` | fold 5k-token chunks into a fixed 1k memory | all, but compressed | all three |
+| `raptor` | recursive summary tree, retrieve top-k | no | all three |
+| `hipporag` | OpenIE graph + Personalized PageRank | no | all three |
+| `arag` | ReAct agent over search/read tools | no | all three |
+| `structrag` | restructure every doc, then answer | yes | all three |
+| `codeact` | writes Python over the documents | yes | all three |
+| `rlm` | documents in a REPL, recursive sub-calls | yes | all three |
+| `claude-code` | `claude -p` over the docs as files | yes | loong, corpusqa |
 
 Retrieval baselines are expected to lose here; the gap is the measurement, not a bug.
 

@@ -34,7 +34,7 @@ the smolagents package and drives `CodeAgent` through its public API.
 
 | package | used by | license |
 | --- | --- | --- |
-| `smolagents` | `codeact` (the `evals[codeact]` extra) | Apache-2.0 |
+| `smolagents` | `codeact` | Apache-2.0 |
 | `rlms` | `rlm` | MIT |
 | `litellm`, `datasets`, `pydantic` | the harness | MIT / Apache-2.0 |
 

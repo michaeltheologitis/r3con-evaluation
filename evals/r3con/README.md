@@ -105,7 +105,7 @@ accumulate rather than overwrite.
 ## Tests
 
 ```bash
-uv run --extra test pytest tests/r3con -q
+uv run pytest tests/r3con -q
 ```
 
 No API calls.
