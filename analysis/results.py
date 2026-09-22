@@ -141,22 +141,9 @@ def _shade_method(frame):                         # light-blue background on the
     method = frame["source"].eq("method").tolist()
     return lambda col: ["background-color: #eef6ff" if m else "" for m in method]
 
-def show_board(ct):
-    ct = ct.rename(columns={"EM": "Accuracy"}, level=1)       # display the exact-match rate as "Accuracy"
-    s_cols = [c for c in ct.columns if c[1] == "S"]
-    acc_cols = [c for c in ct.columns if c[1] == "Accuracy"]
-    st = ct.style
-    if s_cols:                                                # Score half — absent on accuracy-only boards
-        st = st.map(_band, subset=s_cols).format("{:.2f}", subset=s_cols, na_rep="–")
-    if acc_cols:
-        st = st.map(_band_em, subset=acc_cols).format("{:.2%}", subset=acc_cols, na_rep="–")
-    return st                                                 # accuracy shown as a percentage value
-
-
-def acc_only(ct):
-    """Keep just the Accuracy (EM) half of a reasoning-category board — we no longer report the
-    1–100 Score there (owner). Preserves the MultiIndex so `show_board` still reads level 1."""
-    return ct.loc[:, [c for c in ct.columns if c[1] == "EM"]]
+def show_board(board):
+    """A `report.crosstab` board: accuracy per reasoning category, shown as a percentage."""
+    return board.style.map(_band_em).format("{:.2%}", na_rep="–")
 
 def show_headline(h):
     cols = ["run", "model", "n", "n_scored", "n_err", "avg_score", "perfect_rate",
@@ -219,7 +206,7 @@ show_headline(alias_rows(report.headline(main)))
 # ### Loong scoreboard — overall (kept context tiers)
 
 # %%
-show_board(alias_board(acc_only(report.crosstab(main, col="task_name"))))
+show_board(alias_board(report.crosstab(main, col="task_name")))
 
 # %% [markdown]
 # #### LaTeX — context-length table rows
@@ -255,10 +242,9 @@ def _method2label(df):
 
 
 def _latex_rows(ct, cols, method2label):
-    r"""One ``\\``-terminated LaTeX row per method (LATEX_PREAMBLE order, fixed). Column-max
-    wrapped in ``\best{}``; EM -> a 2-decimal percentage VALUE (x100), Score -> a 2-decimal grade;
-    neither carries a trailing ``\%`` (add it in the table template); a missing cell -> ``--``.
-    Shared by every LaTeX export."""
+    r"""One ``\\``-terminated LaTeX row per method (LATEX_PREAMBLE order, fixed). Each cell is a
+    2-decimal accuracy VALUE (x100) with no trailing ``\%`` (the table template adds it); the
+    column max is wrapped in ``\best{}`` and a missing cell is ``--``."""
     ct = ct.reindex(columns=cols)
     hi = ct.max()                                      # column-max (skips NaN) -> \best{}
     rows = []
@@ -272,7 +258,7 @@ def _latex_rows(ct, cols, method2label):
                 if pd.isna(v):
                     cells.append("--")
                     continue
-                txt = f"{v * 100:.2f}" if c[1] == "EM" else f"{v:.2f}"   # both bare (no \%): Accuracy is x100
+                txt = f"{v * 100:.2f}"                     # bare (no \%): the template adds it
                 cells.append(rf"\best{{{txt}}}" if v == hi[c] else txt)
         else:
             cells = ["--"] * len(cols)                 # method absent from this board
@@ -282,8 +268,7 @@ def _latex_rows(ct, cols, method2label):
 
 def latex_context_rows(df):
     method2label = _method2label(df)
-    cols = pd.MultiIndex.from_tuples(
-        [(v, m) for v in [*meta.TASK_ORDER, "Overall"] for m in ("EM",)])   # Accuracy only
+    cols = [*meta.TASK_ORDER, "Overall"]
     blocks = []
     for s, header in LATEX_TIER.items():               # one \resultset block per context tier
         rows = _latex_rows(report.crosstab(df, col="task_name", set_n=s), cols, method2label)
@@ -312,17 +297,13 @@ def average_board(df):
     the larger tiers count for more (they hold 564 / 481 / 232 tasks). Same numbers as the overall
     board above and as the cross-benchmark Totals table. Deliberately NOT a per-tier macro average:
     that would hand the small, hard 200k-250k tier a full third of the vote (36.13% vs 37.43%)."""
-    cols = pd.MultiIndex.from_tuples(
-        [(v, m) for v in [*meta.TASK_ORDER, "Overall"] for m in ("EM",)])   # Accuracy only
-    return report.crosstab(df, col="task_name").reindex(columns=cols)
+    return report.crosstab(df, col="task_name")
 
 
 def latex_average_rows(df):
     r"""The pooled board as LaTeX body rows — no `\resultset` header, just `\midrule` + the rows.
     Same cell formatting as the per-tier blocks above."""
-    cols = pd.MultiIndex.from_tuples(
-        [(v, m) for v in [*meta.TASK_ORDER, "Overall"] for m in ("EM",)])   # Accuracy only
-    rows = _latex_rows(average_board(df), cols, _method2label(df))
+    rows = _latex_rows(average_board(df), [*meta.TASK_ORDER, "Overall"], _method2label(df))
     return "\\midrule\n" + "\n%\n".join(rows)
 
 

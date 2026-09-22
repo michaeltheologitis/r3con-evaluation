@@ -4,8 +4,7 @@ NO printing or plotting here; that is the notebook's job (`analysis/results.ipyn
 
 - :func:`headline` — one row per run (full identity): Avg Score / Perfect Rate (loong) or
   Accuracy (corpusqa), answered-only + ⁺all (context-window errors counted as 0), tokens.
-- :func:`crosstab` — the banded scoreboard: an **S** (avg score, ctx-inclusive) and **EM**
-  (perfect rate) cell per task-type (or domain), plus an Overall block; one row per run.
+- :func:`crosstab` — accuracy per reasoning category plus an Overall column; one row per run.
 
 In both, **baselines come first and our method (`grounded-*`) last** ("baseline" sorts
 before "method"), each block by score descending. The method's configs (summary_rounds
@@ -103,8 +102,6 @@ DOWNSTREAM = [
     ("LLM",                    "grounded-llm", DEFAULT_SR),
     ("Coding agent (default)", DEFAULT_METHOD, DEFAULT_SR),
 ]
-ABLATION_COLUMNS = ["ablation", "em", "n"]
-DOWNSTREAM_COLUMNS = ["downstream", "em", "n"]
 
 
 def _em_rows(df: pd.DataFrame, spec: list, label_col: str) -> pd.DataFrame:
@@ -285,29 +282,26 @@ def _value_order(d: pd.DataFrame, col: str) -> list:
 
 def crosstab(df: pd.DataFrame, col: str = "task_name", set_n=None, *,
              benchmark: str = "loong") -> pd.DataFrame:
-    """Banded scoreboard: rows = runs (method last), columns = ``(value, {S, EM})`` over
-    ``col`` plus an Overall block. Keyed by the full run identity so runs never merge.
-    ``benchmark`` selects the rows and the S/EM scale (Loong rating / CorpusQA accuracy) and
-    ``set_n`` restricts to one context-length tier. ``df`` must carry the matching metadata
-    columns (see :func:`scoreboard.meta.attach_meta`)."""
+    """Accuracy board: rows = runs (R3Con last), columns = the distinct values of ``col``
+    plus ``Overall``. Accuracy means the benchmark's exact-match rate — on Loong the fraction
+    scoring 100, on CorpusQA the 0/1 accuracy — always in the ⁺all view. Keyed by the full run
+    identity, so two runs never merge. ``set_n`` restricts to one context-length tier. ``df``
+    must carry the matching metadata columns (see :func:`scoreboard.meta.attach_meta`)."""
     d = add_labels(df[df["benchmark"] == benchmark].copy())
     if set_n is not None:
         d = d[d["set"] == set_n]
-    values = _value_order(d, col)
-    cols = pd.MultiIndex.from_tuples([(v, m) for v in [*values, "Overall"] for m in ("S", "EM")])
+    cols = [*_value_order(d, col), "Overall"]
     groups = {k: g for k, g in d.groupby(RUN_KEY, sort=False)}   # key by the FULL identity
     data, labels = [], []
-    for _, r in headline(d).iterrows():                          # headline order: method last
+    for _, r in headline(d).iterrows():                          # headline order: R3Con last
         g = groups[tuple(r[k] for k in RUN_KEY)]
-        row = {}
-        for v in values:
-            row[(v, "S")], row[(v, "EM")] = _se(g[g[col] == v])
-        row[("Overall", "S")], row[("Overall", "EM")] = _se(g)
+        row = {v: _se(g[g[col] == v])[1] for v in cols[:-1]}
+        row["Overall"] = _se(g)[1]
         data.append(row)
         labels.append(r["run"])
     out = pd.DataFrame(data, index=_uniquify(labels), columns=cols, dtype=float)
     out.index.name = "run"
-    return out                          # full precision; the notebook formats (S 1dp, EM 2dp)
+    return out                                     # 0-1; the notebook formats as a percentage
 
 
 def build(baselines_root=None, method_root=None) -> pd.DataFrame:

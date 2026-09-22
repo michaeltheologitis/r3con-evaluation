@@ -27,15 +27,10 @@ def repo_root() -> Path:
 
 
 def logs_dir() -> Path:
-    """``<repo>/logs/`` — the root of both log trees."""
+    """``<repo>/logs/`` — one directory per benchmark (each holding one per baseline), with
+    R3Con's own ``r3con/`` beside them; that one is skipped by name when the baselines are
+    scanned, see :data:`scoreboard.load.NON_BENCHMARK_DIRS`."""
     return repo_root() / "logs"
-
-
-def baselines_logs() -> Path:
-    """The baselines root: one directory per benchmark, each holding one per baseline.
-    ``logs/r3con/`` sits beside them and is skipped by name — see
-    :data:`scoreboard.load.NON_BENCHMARK_DIRS`."""
-    return logs_dir()
 
 
 def method_logs() -> Path:

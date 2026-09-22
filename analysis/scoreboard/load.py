@@ -161,7 +161,7 @@ def _baseline_variant(cfg: dict) -> str:
 
 def load_baselines(root: Path | None = None) -> pd.DataFrame:
     """One row per baseline inference and per recorded error."""
-    root = root or paths.baselines_logs()
+    root = root or paths.logs_dir()
     if not root.is_dir():
         return pd.DataFrame(columns=COLUMNS)
     rows = []

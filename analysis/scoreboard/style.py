@@ -54,5 +54,4 @@ def marker(method: str) -> str:
     return METHODS.get(method, _FALLBACK)["marker"]
 
 
-NAMES = {m: s["name"] for m, s in METHODS.items()}   # raw method id -> display name
-ORDER = list(METHODS)                                 # raw method ids, in display order
+ORDER = list(METHODS)      # raw method ids, in display order
