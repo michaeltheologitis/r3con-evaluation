@@ -87,7 +87,7 @@ def _scores(sub: pd.DataFrame) -> tuple[pd.Series, pd.Series, int, int]:
 
 # The default config + the two single-PHASE ablations off it (all else equal) — (label, method,
 # summary_rounds). Each removes one phase of the just-in-time pipeline (the paper's Fig. r3con):
-#   w/o extracting relevance → summary_rounds=0 (no relevance state 𝓡; same CodeAct downstream)
+#   w/o extracting relevance → summary_rounds=0 (no relevant context 𝓡; same CodeAct downstream)
 #   w/o structuring          → `grounded-codeact_ablation_nostruct` (CodeAct over 𝓡, no parse)
 # Swapping the DOWNSTREAM reasoner is deliberately NOT one of these (owner, 2026-09-21): it
 # leaves the representation intact, so it's a separate comparison — see :data:`DOWNSTREAM`.

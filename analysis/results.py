@@ -627,13 +627,13 @@ compress.style.format(_fmt, na_rep="–").map(
 # %% [markdown]
 # ### Representation size
 #
-# Average per task: the external context, the relevance state 𝒡, and the structured data.
+# Average per task: the external context, the relevant context 𝓡, and the structured data.
 
 # %%
 _PAPER_BENCH = [("corpusqa", "CorpusQA"), ("loong", "Loong")]
 _PAPER_ROWS = [
     ("External context", None),
-    ("Relevance state 𝒡", "summary_tokens"),
+    ("Relevant context 𝓡", "summary_tokens"),
     ("Structured data", "parse_tokens"),
 ]
 _avg = {b: art.loc[art["benchmark"] == b, ["input_tokens", "summary_tokens", "parse_tokens"]].mean()
@@ -655,7 +655,7 @@ FIG_DIR = paths.FIGURES_DIR / "cross"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 _IR_BENCH = [("CorpusQA", "corpusqa"), ("Loong", "loong")]
-_IR_PANELS = [(r"Relevance state $\mathcal{R}$ (tokens per example)", "summary_tokens"),
+_IR_PANELS = [(r"Relevant context $\mathcal{R}$ (tokens per example)", "summary_tokens"),
               ("Structured data (tokens per example)", "parse_tokens")]
 _IR_INK = "#333333"
 
