@@ -93,9 +93,24 @@ def _band(v, lo=40, hi=65):
 def _band_em(v):
     return _band(v, lo=0.2, hi=0.4)
 
-def show_board(board):
-    """A `report.crosstab` board: accuracy per reasoning category, shown as a percentage."""
-    return board.style.map(_band_em).format("{:.2%}", na_rep="–")
+def _pm_frame(value, err, band_for):
+    """One table of `accuracy% ± standard error`, coloured by the accuracy underneath.
+    `band_for(column)` picks the colour scale, so a table can mix benchmarks."""
+    def cell(v, e):
+        return "–" if pd.isna(v) else f"{v * 100:.2f}% ± {e * 100:.2f}"
+
+    text = pd.DataFrame([[cell(value.iat[i, j], err.iat[i, j]) for j in range(value.shape[1])]
+                         for i in range(value.shape[0])],
+                        index=value.index, columns=value.columns)
+    css = pd.DataFrame([[band_for(value.columns[j])(value.iat[i, j]) for j in range(value.shape[1])]
+                        for i in range(value.shape[0])],
+                       index=value.index, columns=value.columns)
+    return text.style.apply(lambda _: css, axis=None)
+
+
+def show_board(board, se):
+    """A `report.crosstab` board: accuracy per reasoning category, with its standard error."""
+    return _pm_frame(board, se, lambda _col: _band_em)
 
 # %% [markdown]
 # ## Main results
@@ -128,7 +143,8 @@ print("main-results methods:", list(report.headline(main)["run"].replace(aliases
 # Every task weighted equally, so the larger tiers count for more.
 
 # %%
-show_board(alias_board(report.crosstab(main, col="task_name")))
+show_board(alias_board(report.crosstab(main, col="task_name")),
+           alias_board(report.crosstab_se(main, col="task_name")))
 
 # %% [markdown]
 # # CorpusQA
@@ -340,26 +356,21 @@ _tcols = pd.MultiIndex.from_tuples([c for c, *_ in _spec])
 
 _methods = [m for m in style.ORDER
             if any(m in set(p["method"]) for p in (_cp, _lp))]
-_tdata, _tidx = [], []
+_tdata, _tedata, _tidx = [], [], []
 for _m in _methods:
-    _row = {}
+    _row, _erow = {}, {}
     for _col, _pin, _dom, _si in _spec:
         _g = _pin[_pin["method"] == _m]
         if _dom is not None:
             _g = _g[_g["domain"] == _dom]
         _row[_col] = report._se(_g)[_si] if len(_g) else float("nan")
-    _tdata.append(_row); _tidx.append(style.name(_m))
+        _erow[_col] = report.se_em(_g) if len(_g) else float("nan")
+    _tdata.append(_row); _tedata.append(_erow); _tidx.append(style.name(_m))
 totals = pd.DataFrame(_tdata, index=_tidx, columns=_tcols).rename_axis("method")
+totals_se = pd.DataFrame(_tedata, index=_tidx, columns=_tcols).rename_axis("method")
 
 
-def _totals_style(df):
-    s = pd.DataFrame("", index=df.index, columns=df.columns)
-    for _col in df.columns:
-        s[_col] = df[_col].map(_band_em if _col[0] == "Loong" else _band_acc)
-    return s
-
-
-totals.style.apply(_totals_style, axis=None).format("{:.2%}", na_rep="–")
+_pm_frame(totals, totals_se, lambda col: _band_em if col[0] == "Loong" else _band_acc)
 
 # %% [markdown]
 # ### Overall accuracy and R3Con's margin over the best baseline

@@ -260,6 +260,22 @@ def _se(sub: pd.DataFrame) -> tuple[float, float]:
     return all_view.mean(), (all_view == perfect).mean()
 
 
+def se_em(sub: pd.DataFrame) -> float:
+    """Binomial standard error (0–1) of a slice's ⁺all accuracy — the fraction of tasks scoring
+    the benchmark's perfect value. That rate is a proportion over ``n`` independent tasks, so its
+    error is ``sqrt(p(1-p)/n)``. NaN for an empty slice.
+
+    One standard error, not a confidence interval; multiply by 1.96 for 95%. It is the Wald form,
+    which degenerates at the extremes — a cell reading ``0.00 ± 0.00`` means none of its tasks
+    were right, not that the estimate is certain."""
+    _real, all_view, _, _ = _scores(sub)
+    n = len(all_view)
+    if n == 0:
+        return float("nan")
+    p = (all_view == PERFECT.get(sub["benchmark"].iloc[0], 100.0)).mean()
+    return (p * (1 - p) / n) ** 0.5
+
+
 def _uniquify(labels: list[str]) -> list[str]:
     """Append ``#2``, ``#3``… to repeated labels so the row index stays unique."""
     seen: dict[str, int] = {}
@@ -287,6 +303,20 @@ def crosstab(df: pd.DataFrame, col: str = "task_name", set_n=None, *,
     scoring 100, on CorpusQA the 0/1 accuracy — always in the ⁺all view. Keyed by the full run
     identity, so two runs never merge. ``set_n`` restricts to one context-length tier. ``df``
     must carry the matching metadata columns (see :func:`scoreboard.meta.attach_meta`)."""
+    return _board(df, col, set_n, benchmark, lambda g: _se(g)[1])
+
+
+def crosstab_se(df: pd.DataFrame, col: str = "task_name", set_n=None, *,
+                benchmark: str = "loong") -> pd.DataFrame:
+    """The error twin of :func:`crosstab`: same rows, same columns, each cell the binomial
+    standard error of that cell's accuracy (:func:`se_em`)."""
+    return _board(df, col, set_n, benchmark, se_em)
+
+
+def _board(df: pd.DataFrame, col: str, set_n, benchmark: str, cell) -> pd.DataFrame:
+    """The shared board shape — rows in display order, one column per value plus ``Overall``,
+    each entry ``cell(slice)``. A board and its error twin go through here together, so they
+    cannot disagree about which run is on which line."""
     d = add_labels(df[df["benchmark"] == benchmark].copy())
     if set_n is not None:
         d = d[d["set"] == set_n]
@@ -295,8 +325,8 @@ def crosstab(df: pd.DataFrame, col: str = "task_name", set_n=None, *,
     data, labels = [], []
     for _, r in headline(d).iterrows():                          # headline order: R3Con last
         g = groups[tuple(r[k] for k in RUN_KEY)]
-        row = {v: _se(g[g[col] == v])[1] for v in cols[:-1]}
-        row["Overall"] = _se(g)[1]
+        row = {v: cell(g[g[col] == v]) for v in cols[:-1]}
+        row["Overall"] = cell(g)
         data.append(row)
         labels.append(r["run"])
     out = pd.DataFrame(data, index=_uniquify(labels), columns=cols, dtype=float)
