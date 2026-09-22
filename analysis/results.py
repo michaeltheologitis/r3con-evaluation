@@ -37,7 +37,7 @@ pd.set_option("display.max_columns", None)
 
 # %%
 KEEP_MODELS = {"qwen3-5-35b-a3b", "rl-memoryagent-14b",
-               "claude-opus-4-8", "claude-sonnet-4-6", "claude-sonnet-5"}
+               "claude-sonnet-4-6", "claude-sonnet-5"}
 MIN_SCORED = 30
 GROUNDED_NAME = style.GROUNDED_NAME
 GROUNDED_METHOD = report.DEFAULT_METHOD
