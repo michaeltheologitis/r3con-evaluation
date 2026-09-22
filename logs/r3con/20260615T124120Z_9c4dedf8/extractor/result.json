@@ -1,1 +1,0 @@
-{"totals": {"tokens": {"prompt": 29702, "completion": 12558, "total": 42260}}, "parsed": {"papers": [{"title": "Minimod: A Finite Difference solver for Seismic Modeling", "references_provided_papers": []}, {"title": "Massively scalable stencil algorithm", "references_provided_papers": ["Minimod: A Finite Difference solver for Seismic Modeling"]}]}}

@@ -1,1 +1,0 @@
-{"task_id": "real_estate_en_5@1m", "config": {"benchmark": "corpusqa", "baseline": "claude-code", "model": "claude-opus-4-8", "effort": "xhigh", "run_version": "v1"}, "usage": {"total": {"claude-haiku-4-5-20251001": {"prompt_tokens": 877, "completion_tokens": 20}, "claude-opus-4-8": {"prompt_tokens": 509163, "completion_tokens": 19340}}}}

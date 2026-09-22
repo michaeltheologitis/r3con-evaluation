@@ -2,6 +2,17 @@
 
 Three benchmarks, nine baselines, and R3Con — the method under evaluation.
 
+**Unpack the logs first.** Every run behind the paper's numbers ships compressed; the
+analysis reads the unpacked tree:
+
+```bash
+tar -xf logs.tar.zst          # -> logs/, 62 MB over 176k files
+```
+
+(On tar older than 1.31: `zstd -dc logs.tar.zst | tar -x`.) It is one archive rather than
+176k committed files because each of them is a few hundred bytes, so the loose tree costs
+~750 MB of disk blocks for 62 MB of content.
+
 ## Where things are
 
 ```
@@ -14,7 +25,7 @@ evals/
   llm/                    LiteLLM seam + token accounting
   settings.py             model ids and paths
 scripts/                  log cleaners, and the method's run entry points
-logs/                     the runs behind the paper's numbers (stripped; see analysis/)
+logs.tar.zst              the runs behind the paper's numbers (stripped; unpack to logs/)
 analysis/                 rebuilds the paper's tables and figures from logs/
 tests/
 ```
@@ -42,9 +53,10 @@ Put `OPENAI_API_KEY` in `.env` — the judges and every embedding call go to Ope
 
 ## Reproducing the paper's numbers
 
-The runs are in `logs/`, so nothing has to be re-run:
+The runs are in `logs.tar.zst`, so nothing has to be re-run:
 
 ```bash
+tar -xf logs.tar.zst
 uv sync --extra analysis
 uv run jupytext --sync --execute analysis/results.py
 ```

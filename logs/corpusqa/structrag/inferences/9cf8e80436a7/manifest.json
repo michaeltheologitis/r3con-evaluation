@@ -1,1 +1,0 @@
-{"task_id": "financial_en_21@1m", "config": {"benchmark": "corpusqa", "baseline": "structrag", "model": "qwen3-5-4b", "seed": 42}, "usage": {"total": {"Qwen/Qwen3.5-4B": {"prompt_tokens": 901474, "completion_tokens": 191664}}}}

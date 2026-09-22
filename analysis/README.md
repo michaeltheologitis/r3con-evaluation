@@ -3,6 +3,7 @@
 Rebuilds every table and figure in the paper from this repo's `logs/`.
 
 ```bash
+tar -xf logs.tar.zst                             # from the repo root, if you haven't yet
 uv sync --extra analysis
 uv run jupyter lab analysis/results.ipynb        # then Restart & Run All
 ```
@@ -36,7 +37,7 @@ edit either one and `jupytext --sync` updates the other.
 happened. The notebook reads those verdicts back, so it regenerates in seconds and gives the
 same numbers every time. No model is called anywhere in here.
 
-**The logs are stripped.** `logs/` keeps only the fields this analysis reads — the run
+**The logs are stripped.** `logs.tar.zst` keeps only the fields this analysis reads — the run
 config, per-model token totals, the judge's score, the step/iteration-cap signal, and each
 R3Con stage's token totals. Questions, gold answers, agent traces and per-call dumps are not
 included, which is what makes the tree small enough to ship. R3Con's just-in-time artifacts

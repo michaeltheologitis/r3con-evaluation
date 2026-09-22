@@ -1,1 +1,0 @@
-{"task_id": "bfe2f7f4-3f2f-49e8-be50-20c3e085c064", "config": {"benchmark": "loong", "baseline": "rlm", "model": "qwen3-5-35b-a3b", "seed": 42, "max_iterations": 30, "max_depth": 1, "max_timeout": null, "run_version": "v1"}, "usage": {"total": {"Qwen/Qwen3.5-35B-A3B": {"prompt_tokens": 193223, "completion_tokens": 9716}}}, "trace": {"n_iterations": 17, "max_iterations": 30}}

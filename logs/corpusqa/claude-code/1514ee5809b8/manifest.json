@@ -1,1 +1,0 @@
-{"task_id": "financial_zh_29@1m", "config": {"benchmark": "corpusqa", "baseline": "claude-code", "model": "claude-sonnet-5", "effort": "high", "run_version": "v1"}, "usage": {"total": {"claude-haiku-4-5-20251001": {"prompt_tokens": 850, "completion_tokens": 32}, "claude-sonnet-5": {"prompt_tokens": 218345, "completion_tokens": 3525}}}}

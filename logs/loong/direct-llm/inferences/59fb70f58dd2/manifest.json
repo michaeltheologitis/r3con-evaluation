@@ -1,1 +1,0 @@
-{"task_id": "8af6f323-5bae-4174-8a2b-a9b6d3fa82b8", "config": {"benchmark": "loong", "baseline": "direct-llm", "model": "qwen3-5-35b-a3b", "seed": 42}, "usage": {"total": {"Qwen/Qwen3.5-35B-A3B": {"prompt_tokens": 71089, "completion_tokens": 5392}}}}

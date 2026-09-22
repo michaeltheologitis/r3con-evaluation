@@ -1,1 +1,0 @@
-{"task_id": "education_en_35@1m", "config": {"benchmark": "corpusqa", "baseline": "codeact", "model": "qwen3-5-4b", "seed": 42, "max_steps": 60, "run_version": "v1"}, "usage": {"total": {"Qwen/Qwen3.5-4B": {"prompt_tokens": 573870, "completion_tokens": 10875}}}, "trace": {"state": "success"}}

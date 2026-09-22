@@ -1,1 +1,0 @@
-{"task_id": "real_estate_en_19@128k", "config": {"benchmark": "corpusqa", "baseline": "codeact", "model": "gpt-5-4-nano", "seed": 42, "max_steps": 20, "run_version": "v1"}, "usage": {"total": {"gpt-5.4-nano-2026-03-17": {"prompt_tokens": 135191, "completion_tokens": 6003}}}, "trace": {"state": "success"}}

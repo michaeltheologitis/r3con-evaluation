@@ -1,1 +1,0 @@
-{"totals": {"tokens": {"prompt": 38523, "completion": 15299, "total": 53822}}, "parsed": {"financial_items": [{"company": "浙江夏厦精密制造股份有限公司", "item_name": "其他应付款", "item_type": "balance_sheet", "period_end_amount": 913610.87, "period_begin_amount": 743805.85, "report_period": "2024 年第一季度", "currency": "元", "quote": "|其他应付款|913,610.87|743,805.85|"}]}}

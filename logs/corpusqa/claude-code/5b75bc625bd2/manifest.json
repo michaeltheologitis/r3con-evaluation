@@ -1,1 +1,0 @@
-{"task_id": "financial_en_32@1m", "config": {"benchmark": "corpusqa", "baseline": "claude-code", "model": "claude-opus-4-8", "effort": "xhigh", "run_version": "v1"}, "usage": {"total": {"claude-haiku-4-5-20251001": {"prompt_tokens": 2540236, "completion_tokens": 14691}, "claude-opus-4-8": {"prompt_tokens": 638715, "completion_tokens": 21977}}}}

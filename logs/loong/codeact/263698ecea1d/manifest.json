@@ -1,1 +1,0 @@
-{"task_id": "b91d10e3-d5b9-47c0-a2e0-610c4c857f82", "config": {"benchmark": "loong", "baseline": "codeact", "model": "qwen3-5-4b", "seed": 42, "max_steps": 60, "run_version": "v1"}, "usage": {"total": {"Qwen/Qwen3.5-4B": {"prompt_tokens": 172670, "completion_tokens": 6216}}}, "trace": {"state": "success"}}

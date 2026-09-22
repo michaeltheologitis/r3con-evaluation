@@ -1,1 +1,0 @@
-{"task_id": "financial_en_34@1m", "config": {"benchmark": "corpusqa", "baseline": "codeact", "model": "qwen3-5-35b-a3b", "seed": 42, "max_steps": 20, "run_version": "v1"}, "usage": {"total": {"Qwen/Qwen3.5-35B-A3B": {"prompt_tokens": 419887, "completion_tokens": 19065}}}, "trace": {"state": "max_steps_error"}}

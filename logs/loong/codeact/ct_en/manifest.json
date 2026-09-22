@@ -1,1 +1,0 @@
-{"task_id": "7bfef6af-b337-4b5d-aada-41f500b375d3", "config": {"benchmark": "loong", "baseline": "codeact", "model": "gpt-5-4-nano", "seed": 42, "max_steps": 10, "run_version": "v1"}, "usage": {"total": {"gpt-5.4-nano-2026-03-17": {"prompt_tokens": 18962, "completion_tokens": 1698}}}, "trace": {"state": "success"}}
