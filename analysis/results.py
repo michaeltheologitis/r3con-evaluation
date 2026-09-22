@@ -29,7 +29,7 @@ if str(ROOT / "analysis") not in sys.path:
     sys.path.insert(0, str(ROOT / "analysis"))
 
 from scoreboard import paths, report, meta, style, load
-from IPython.display import display, Markdown
+from IPython.display import display
 pd.set_option("display.max_columns", None)
 
 # %% [markdown]
@@ -93,24 +93,9 @@ def _band(v, lo=40, hi=65):
 def _band_em(v):
     return _band(v, lo=0.2, hi=0.4)
 
-def _shade_method(frame):
-    method = frame["source"].eq("method").tolist()
-    return lambda col: ["background-color: #eef6ff" if m else "" for m in method]
-
 def show_board(board):
     """A `report.crosstab` board: accuracy per reasoning category, shown as a percentage."""
     return board.style.map(_band_em).format("{:.2%}", na_rep="–")
-
-def show_headline(h):
-    cols = ["run", "model", "n", "n_scored", "n_err", "avg_score", "perfect_rate",
-            "avg_score_all", "perfect_rate_all", "mean_tokens", "total_tokens"]
-    return (h[cols].style.hide(axis="index")
-            .apply(_shade_method(h), axis=0)
-            .map(_band, subset=["avg_score", "avg_score_all"])
-            .map(_band_em, subset=["perfect_rate", "perfect_rate_all"])
-            .format({"mean_tokens": "{:,.0f}", "total_tokens": "{:,.0f}",
-                     "avg_score": "{:.2f}", "avg_score_all": "{:.2f}",
-                     "perfect_rate": "{:.2%}", "perfect_rate_all": "{:.2%}"}, na_rep="–"))
 
 # %% [markdown]
 # ## Main results
@@ -126,27 +111,16 @@ def pin_main(d):
 
 main = pin_main(loong_real)
 
-banded = main[main["method"] != "claude-code"]
-
 aliases = {}
 for _meth, _name in [(GROUNDED_METHOD, GROUNDED_NAME), ("claude-code", "Claude Code")]:
     _runs = main.loc[main["method"] == _meth, "run"]
     if len(_runs):
         aliases[_runs.iloc[0]] = _name
 
-def alias_rows(t):
-    return t.assign(run=t["run"].replace(aliases))
-
 def alias_board(ct):
     return ct.rename(index=aliases)
 
 print("main-results methods:", list(report.headline(main)["run"].replace(aliases)))
-
-# %% [markdown]
-# ### Headline
-
-# %%
-show_headline(alias_rows(report.headline(main)))
 
 # %% [markdown]
 # ### Accuracy by reasoning category
@@ -155,18 +129,6 @@ show_headline(alias_rows(report.headline(main)))
 
 # %%
 show_board(alias_board(report.crosstab(main, col="task_name")))
-
-# %% [markdown]
-# ### Accuracy by reasoning category, per context tier
-#
-# The same board within each context-length tier — this is where the methods separate.
-
-# %%
-LOONG_TIERS = {2: "50k–100k tokens", 3: "100k–200k tokens", 4: "200k–250k tokens"}
-
-for _set, _label in LOONG_TIERS.items():
-    display(Markdown(f"**{_label}**"))
-    display(show_board(alias_board(report.crosstab(banded, col="task_name", set_n=_set))))
 
 # %% [markdown]
 # # CorpusQA
