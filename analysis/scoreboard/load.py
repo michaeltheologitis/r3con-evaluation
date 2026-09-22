@@ -315,8 +315,10 @@ def load_method_artifacts(root: Path | None = None) -> pd.DataFrame:
     - ``context_chars`` — the input documents' size, straight from the manifest.
     - ``summary_chars`` — the FINAL round's per-doc summaries, concatenated (``rounds[-1]``).
       A ``summary_rounds=0`` run has no rounds, hence 0 — that's the "w/o summaries" ablation.
-    - ``parse_chars`` — the extractor's merged structured ``parsed`` object, as the method's own JSON
-      (``indent=2``, non-ASCII kept — how it is serialized for the inference prompt).
+    - ``parse_chars`` — the extractor's merged structured ``parsed`` object as COMPACT JSON
+      (no whitespace, non-ASCII kept). This measures the structured data itself: the inference
+      prompt pretty-prints the same object, but that indentation is about a third of those
+      tokens and says more about the serializer than about the representation.
     - ``schema_chars`` — the proposer's generated Pydantic ``schema_code``.
 
     Both char AND token columns are EXACT — the token counts come from the served model's own
@@ -335,9 +337,9 @@ def load_method_artifacts(root: Path | None = None) -> pd.DataFrame:
         final = (rounds[-1].get("summaries") or []) if rounds else []
         summary_text = "".join(s for s in final if isinstance(s, str))
         parsed = (_read_json(run_dir / "extractor" / "result.json") or {}).get("parsed")
-        # serialized EXACTLY as the method does when it hands the parse to inference
-        # (grounded/stages/inference.py: json.dumps(parse_dict, indent=2, ensure_ascii=False))
-        parse_text = "" if parsed is None else json.dumps(parsed, indent=2, ensure_ascii=False)
+        # COMPACT: whitespace is not part of the representation (see the docstring)
+        parse_text = "" if parsed is None else json.dumps(parsed, ensure_ascii=False,
+                                                          separators=(",", ":"))
         schema_text = (_read_json(run_dir / "proposer" / "result.json") or {}).get("schema_code") or ""
         texts.append((summary_text, parse_text, schema_text))
         rows.append({
