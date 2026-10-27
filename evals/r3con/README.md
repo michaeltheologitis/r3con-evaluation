@@ -11,8 +11,10 @@ evals/r3con/
     prompts/   versioned per stage (see below)
     configs/   experiment configs + sampling presets
   harness/     one adapter per benchmark + the subprocess launcher
+               + ablation_nostruct.py, the "w/o structuring" ablation
 scripts/r3con/<benchmark>/run.py        runs it
 scripts/r3con/<benchmark>/run_task.py   runs one task by hand
+scripts/r3con/ablation_nostruct.py      re-runs CodeAct over finished runs' summaries, with no parse
 ```
 
 ## The pipeline
@@ -59,6 +61,27 @@ progress into each run's `run_task.log`.
 Re-running resumes: tasks already finished for this benchmark under the same run identity
 and every requested strategy are skipped. `--force` re-runs them.
 
+### The "w/o structuring" ablation
+
+CodeAct over a finished run's summaries alone — no parse in the prompt, nothing bound in the
+sandbox — to measure what the structured parse adds. It recomputes nothing upstream and lands
+in each run folder as a third strategy, `inference/codeact_ablation_nostruct/`, which the
+analysis picks up beside `llm` and `codeact`:
+
+```bash
+uv run python scripts/r3con/ablation_nostruct.py \
+  --model hosted_vllm/Qwen/Qwen3.5-35B-A3B --base-url http://localhost:8555/v1 \
+  --api-key <key> --workers 20 \
+  --label 'default[model=Qwen3.5-35B-A3B,seed=42,sr=2,prompts=(sum=v3,prop=v4,ext=v2,llm=v4,cod=v4)]'
+```
+
+`--label` restricts it to one run identity (the paper ran it over the default configuration
+above); `--benchmark` to one benchmark. It uses the prompt
+`prompts/inference/codeact/ablation-nostruct.yaml`, and skips folders that already have the
+ablation or whose summaries are not on disk. The shipped logs carry their questions and
+summaries only for the 1,929 default-configuration runs, which already have the ablation; any
+other folder needs a fresh run first.
+
 ## Run config
 
 A `RunConfig` holds everything that shapes the output — model, seed, summary rounds, each
@@ -95,6 +118,8 @@ logs/r3con/<UTC-timestamp>_<hex>/
   proposer/result.json   the proposed schema and the reasoning behind it
   extractor/result.json  the merged parse and which document each record came from
   inference/{llm,codeact}/   the answer, plus the full transcript for codeact
+  inference/codeact_ablation_nostruct/   the same for the no-parse ablation, once
+                         scripts/r3con/ablation_nostruct.py has run over the folder
   */calls.json           every LLM call: prompt, response, tokens
   run_task.log
 ```

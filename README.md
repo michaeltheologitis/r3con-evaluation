@@ -99,6 +99,8 @@ manifest, whatever the method built (trajectory, index, memory), and `calls.json
 index in a sibling `_indices/`, reused across runs over the same documents.
 
 R3Con writes to `logs/r3con/`, one folder per task-run with every stage's intermediates.
+The "w/o structuring" ablation (`scripts/r3con/ablation_nostruct.py`) adds a third strategy
+folder, `inference/codeact_ablation_nostruct/`, to the runs it is pointed at.
 
 Either way each task gets one `usage` record in the same `{total, calls}` shape, covering
 every completion and embedding, so baseline and R3Con costs are comparable.
@@ -256,6 +258,13 @@ python scripts/r3con/corpusqa/run.py --inference both \
 python scripts/r3con/dracula/run.py --inference both \
   --model hosted_vllm/Qwen/Qwen3.5-35B-A3B \
   --base-url http://localhost:8555/v1 --api-key "$KEY" --workers 20
+
+# The "w/o structuring" ablation: CodeAct over each finished default-config run's summaries,
+# with no parse. Adds inference/codeact_ablation_nostruct/ to every such folder that lacks it.
+python scripts/r3con/ablation_nostruct.py \
+  --model hosted_vllm/Qwen/Qwen3.5-35B-A3B \
+  --base-url http://localhost:8555/v1 --api-key "$KEY" --workers 20 \
+  --label 'default[model=Qwen3.5-35B-A3B,seed=42,sr=2,prompts=(sum=v3,prop=v4,ext=v2,llm=v4,cod=v4)]'
 
 
 # ============ the two that do not use the served model ============
