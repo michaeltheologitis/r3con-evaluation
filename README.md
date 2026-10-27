@@ -20,7 +20,8 @@ evals/
   llm/                    LiteLLM seam + token accounting
   settings.py             model ids and paths
 scripts/                  log cleaners, and the method's run entry points
-logs.tar.zst              the runs behind the paper's numbers (stripped; unpack to logs/)
+logs.tar.zst              the runs behind the paper's numbers (stripped) and the Dracula
+                          case-study runs (full); unpack to logs/
 analysis/                 rebuilds the paper's tables and figures from logs/
 tests/
 ```
@@ -101,6 +102,13 @@ index in a sibling `_indices/`, reused across runs over the same documents.
 R3Con writes to `logs/r3con/`, one folder per task-run with every stage's intermediates.
 The "w/o structuring" ablation (`scripts/r3con/ablation_nostruct.py`) adds a third strategy
 folder, `inference/codeact_ablation_nostruct/`, to the runs it is pointed at.
+
+The Loong and CorpusQA runs ship stripped to what the analysis reads. The Dracula runs ship
+whole — every call, trace and transcript — one per method, since the point of that benchmark
+is reading what each method did with the same 46 documents: `logs/dracula/` holds RAPTOR
+(seed 6, with its `tree.json`), MemAgent (seed 6), StructRAG (seed 9) and RLM (seed 3), and
+`logs/r3con/20260825T145200Z_cfe327b1` is R3Con at seed 52927 with both inference
+strategies. The analysis reads only Loong and CorpusQA, so none of these enters a table.
 
 Either way each task gets one `usage` record in the same `{total, calls}` shape, covering
 every completion and embedding, so baseline and R3Con costs are comparable.
